@@ -125,7 +125,10 @@ const clientMetaData = {
 app.use((req, res, next) => {
   const hostname = req.hostname
   console.log('hostname', hostname)
-  const baseUrl = `${req.protocol}://${req.hostname}:${req.socket.localPort}`
+  const isLocalhost =
+    req.hostname === 'localhost' || req.hostname === '127.0.0.1'
+  const port = isLocalhost ? `:${req.socket.localPort}` : ''
+  const baseUrl = `${req.protocol}://${req.hostname}${port}`
   const metadata = IDPMetadata[hostname]
 
   // Add users to the req object based on the hostname (i.e. IDP)
