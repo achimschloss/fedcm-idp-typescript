@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In & Create Account | <%= req.hostname %>
+    </title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.16/dist/tailwind.min.css" rel="stylesheet">
+    <script src="/js/auth.js"></script>
+</head>
+
+<header class="title-bar bg-gray-500 text-white py-4 shadow-md w-full fixed top-0 left-0">
+    <div class="container mx-auto flex justify-between items-center">
+        <h1 class="site-title text-2xl font-semibold px-4">Sample IDP - <%= req.hostname %>
+        </h1>
+        <!-- Add any other elements you want in the title bar -->
+        <img src="<%= IDPMetadata.branding?.icons[0]?.url %>" alt="Icon" class="h-8 w-8 mr-4" />
+    </div>
+</header>
+
+<body class="bg-gray-100 min-h-screen flex flex-col items-center py-6 pt-20">
+    <div class="w-full max-w-md px-4 py-6 bg-white rounded-lg shadow-md">
+        <h1 class="text-xl font-semibold mb-4">Please sign in
+        </h1>
+        <form id="signin-form">
+            <label class="block text-sm mb-1" for="email">Email:</label>
+            <input class="block w-full mb-4 p-2 text-sm border border-gray-300 rounded-md" type="email" id="email"
+                name="email" required>
+            <label class="block text-sm mb-1" for="secret">Password:</label>
+            <input class="block w-full mb-6 p-2 text-sm border border-gray-300 rounded-md" type="text" id="secret"
+                name="secret" required>
+            <div id="signin-error-message" class="hidden text-red-500 mb-4"></div>
+            <button type="submit"
+                class="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 rounded-md">Sign In</button>
+        </form>
+        <button onclick="toggleCreateAccount()"
+            class="w-full bg-green-500 hover:bg-green-600 text-white font-medium py-2 rounded-md mt-4">Create
+            Account</button>
+    </div>
+
+    <div id="create-account-container" class="w-full max-w-md px-4 py-6 bg-white rounded-lg shadow-md mt-4 hidden">
+        <h1 class="text-xl font-semibold mb-4">Create Account</h1>
+        <form id="signup-form">
+            <label class="block text-sm mb-1" for="signup-email">Email:</label>
+            <input class="block w-full mb-4 p-2 text-sm border border-gray-300 rounded-md" type="email"
+                id="signup-email" name="email" required>
+            <label class="block text-sm mb-1" for="signup-name">Name:</label>
+            <input class="block w-full mb-4 p-2 text-sm border border-gray-300 rounded-md" type="text" id="signup-name"
+                name="name" required>
+            <label class="block text-sm mb-1" for="signup-secret">Password:</label>
+            <input class="block w-full mb-6 p-2 text-sm border border-gray-300 rounded-md" type="text"
+                id="signup-secret" name="secret" required>
+            <div id="signup-error-message" class="hidden text-red-500 mb-4"></div>
+            <button type="submit"
+                class="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 rounded-md">Create
+                Account</button>
+        </form>
+    </div>
+</body>
+
+</html>

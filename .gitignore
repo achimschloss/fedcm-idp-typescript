@@ -1,0 +1,21 @@
+# Node.js
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Heroku
+.DS_Store
+env
+*.env
+*/.env
+
+# SSL Certificates
+certs
+
+# Editor and IDE files
+.vscode/
+.idea/
+
+# Build files
+/build
+*.log

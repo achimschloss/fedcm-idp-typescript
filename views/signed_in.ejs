@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Information</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.16/dist/tailwind.min.css" rel="stylesheet">
+</head>
+
+<header class="title-bar bg-gray-500 text-white py-4 shadow-md w-full fixed top-0 left-0">
+    <div class="container mx-auto flex justify-between items-center">
+        <h1 class="site-title text-2xl font-semibold px-4">Sample IDP - <%= hostname %>
+        </h1>
+        <!-- Add any other elements you want in the title bar -->
+        <img src="<%= IDPMetadata.branding?.icons[0]?.url %>" alt="Icon" class="h-8 w-8 mr-4" />
+    </div>
+</header>
+
+
+<body class="bg-gray-100 min-h-screen flex flex-col items-center py-6 pt-20">
+    <div class="w-full max-w-md px-4 py-6 bg-white rounded-lg shadow-md">
+        <h1 class="text-xl font-semibold mb-4">Profile</h1>
+        <div class="flex flex-col items-center mb-4">
+            <img class="w-32 h-32 rounded-full object-cover mb-4" src="<%= user.avatarUrl %>"
+                alt="<%= user.name %>'s avatar">
+            <h2 class="text-xl mb-2">
+                <%= user.name %>
+            </h2>
+            <div><span class="font-semibold">
+                    <%= user.email %>
+                </span></div>
+        </div>
+
+        <!-- Add this block to display the list of approved clients -->
+        <% if (user.approved_clients && user.approved_clients.length> 0) { %>
+            <div class="mb-4">
+                <h1 class="text-lg font-semibold mb-2">Approved Clients</h1>
+                <ul class="list-disc list-inside text-sm">
+                    <% user.approved_clients.forEach(client_id=> { %>
+                        <li class="mb-2 flex justify-between">
+                            <%= clientMetaData[client_id].name || client_id %>
+
+                                <!-- Add this form to delete the client -->
+                                <form action="/api/auth/remove_client" method="post">
+                                    <input type="hidden" name="client_id" value="<%= client_id %>">
+                                    <button type="submit" class="text-red-500">Delete</button>
+                                </form>
+                        </li>
+                        <% }) %>
+                </ul>
+            </div>
+            <% } %>
+
+                <form action="/api/auth/signout" method="post">
+                    <button type="submit"
+                        class="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 rounded-md">Sign
+                        Out</button>
+                </form>
+    </div>
+    <!-- Add a divider, some spacing, and a new div for the "Go Back to RP" button -->
+    <hr class="my-4 w-full max-w-md">
+    <div class="w-full max-w-md px-4 py-2 bg-white rounded-lg shadow-md">
+        <div class="w-full text-center">
+            <a href="https://furtive-candy-cauliflower.glitch.me/">
+                <button class="min-w-full bg-green-500 hover:bg-green-600 text-white font-medium py-2 rounded-md">Go
+                    Back to RP</button>
+            </a>
+        </div>
+    </div>
+</body>
+
+</html>
