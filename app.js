@@ -91,6 +91,19 @@ const IDPMetadata = {
         }
       ]
     }
+  },
+  'dry-lake-09460.herokuapp.com': {
+    ...baseConfig,
+    branding: {
+      background_color: 'rgb(255, 255, 204)',
+      color: '0xffffff',
+      icons: [
+        {
+          url: '{baseUrl}/images/web.webp',
+          size: 32
+        }
+      ]
+    }
   }
 }
 
@@ -111,6 +124,7 @@ const clientMetaData = {
 // Use middleware to set the correct user map based on the hostname and the client metadata
 app.use((req, res, next) => {
   const hostname = req.hostname
+  console.log('hostname', hostname)
   const baseUrl = `${req.protocol}://${req.hostname}:${req.socket.localPort}`
   const metadata = IDPMetadata[hostname]
 
