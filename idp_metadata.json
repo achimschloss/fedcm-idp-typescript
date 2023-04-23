@@ -1,0 +1,66 @@
+{
+    "idp-a-test.de": {
+        "accounts_endpoint": "/fedcm/accounts_endpoint",
+        "client_metadata_endpoint": "/fedcm/client_metadata_endpoint",
+        "id_assertion_endpoint": "/fedcm/token_endpoint",
+        "revocation_endpoint": "/fedcm/revocation_endpoint",
+        "branding": {
+            "background_color": "rgb(255, 255, 204)",
+            "color": "0xffffff",
+            "icons": [
+                {
+                    "url": "{baseUrl}/images/web.webp",
+                    "size": 32
+                }
+            ]
+        }
+    },
+    "idp-b-test.de": {
+        "accounts_endpoint": "/fedcm/accounts_endpoint",
+        "client_metadata_endpoint": "/fedcm/client_metadata_endpoint",
+        "id_assertion_endpoint": "/fedcm/token_endpoint",
+        "revocation_endpoint": "/fedcm/revocation_endpoint",
+        "branding": {
+            "background_color": "rgb(173, 216, 230)",
+            "color": "0xffffff",
+            "icons": [
+                {
+                    "url": "{baseUrl}/images/gmx.webp",
+                    "size": 32
+                }
+            ]
+        }
+    },
+    "localhost": {
+        "accounts_endpoint": "/fedcm/accounts_endpoint",
+        "client_metadata_endpoint": "/fedcm/client_metadata_endpoint",
+        "id_assertion_endpoint": "/fedcm/token_endpoint",
+        "revocation_endpoint": "/fedcm/revocation_endpoint",
+        "branding": {
+            "background_color": "rgb(255, 255, 204)",
+            "color": "0xffffff",
+            "icons": [
+                {
+                    "url": "{baseUrl}/images/web.webp",
+                    "size": 32
+                }
+            ]
+        }
+    },
+    "dry-lake-09460.herokuapp.com": {
+        "accounts_endpoint": "/fedcm/accounts_endpoint",
+        "client_metadata_endpoint": "/fedcm/client_metadata_endpoint",
+        "id_assertion_endpoint": "/fedcm/token_endpoint",
+        "revocation_endpoint": "/fedcm/revocation_endpoint",
+        "branding": {
+            "background_color": "rgb(255, 255, 204)",
+            "color": "0xffffff",
+            "icons": [
+                {
+                    "url": "{baseUrl}/images/web.webp",
+                    "size": 32
+                }
+            ]
+        }
+    }
+}

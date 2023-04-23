@@ -8,6 +8,12 @@ const indexRouter = require('./routes/index')
 const fedcmRouter = require('./routes/fedcm')
 const authRouter = require('./routes/auth_router')
 
+// IDP Metadata
+const IDPMetadata = require('./idp_metadata.json')
+
+// RP Metadata
+const clientMetaData = require('./client_metadata.json')
+
 const app = express()
 
 // Set up middleware
@@ -24,17 +30,8 @@ app.use(
   })
 )
 
-// IDP Metadata
-
 // Define a constant for the supported hostnames
-const supportedIDPOrigins = [
-  'idp-a-test.de',
-  'idp-b-test.de',
-  ...(process.env.HEROKU_APP_NAME && process.env.HEROKU_APP_NAME !== 'localhost'
-    ? [process.env.HEROKU_APP_NAME + '.herokuapp.com']
-    : []),
-  'localhost'
-]
+const supportedIDPOrigins = Object.keys(IDPMetadata)
 
 // Create an in-memory user map for each hostname
 // This allows us to store users for each IDP separately in memory
@@ -42,84 +39,6 @@ const users = supportedIDPOrigins.reduce((acc, hostname) => {
   acc[hostname] = new Map()
   return acc
 }, {})
-
-// IDP Metadata
-
-const baseConfig = {
-  accounts_endpoint: '/fedcm/accounts_endpoint',
-  client_metadata_endpoint: '/fedcm/client_metadata_endpoint',
-  id_assertion_endpoint: '/fedcm/token_endpoint',
-  revocation_endpoint: '/fedcm/revocation_endpoint'
-}
-
-const IDPMetadata = {
-  'idp-a-test.de': {
-    ...baseConfig,
-    branding: {
-      background_color: 'rgb(255, 255, 204)',
-      color: '0xffffff',
-      icons: [
-        {
-          url: '{baseUrl}/images/web.webp',
-          size: 32
-        }
-      ]
-    }
-  },
-  'idp-b-test.de': {
-    ...baseConfig,
-    branding: {
-      background_color: 'rgb(173, 216, 230)',
-      color: '0xffffff',
-      icons: [
-        {
-          url: '{baseUrl}/images/gmx.webp',
-          size: 32
-        }
-      ]
-    }
-  },
-  localhost: {
-    ...baseConfig,
-    branding: {
-      background_color: 'rgb(255, 255, 204)',
-      color: '0xffffff',
-      icons: [
-        {
-          url: '{baseUrl}/images/web.webp',
-          size: 32
-        }
-      ]
-    }
-  },
-  'dry-lake-09460.herokuapp.com': {
-    ...baseConfig,
-    branding: {
-      background_color: 'rgb(255, 255, 204)',
-      color: '0xffffff',
-      icons: [
-        {
-          url: '{baseUrl}/images/web.webp',
-          size: 32
-        }
-      ]
-    }
-  }
-}
-
-// RP Metadata
-
-const clientMetaData = {
-  asdfasdfw23e4234qw: {
-    name: 'Sample Client Cauliflower',
-    origin: 'https://furtive-candy-cauliflower.glitch.me'
-  },
-  '234q2asdfasdfasdfa': {
-    name: 'Sample Client Cauliflower',
-    origin: 'https://furtive-candy-cauliflower.glitch.me'
-  }
-  // Add more clients here
-}
 
 // Use middleware to set the correct user map based on the hostname and the client metadata
 app.use((req, res, next) => {
