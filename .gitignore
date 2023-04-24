@@ -18,4 +18,5 @@ certs
 
 # Build files
 /build
+/dist
 *.log

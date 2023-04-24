@@ -1,11 +1,12 @@
-const express = require('express')
-const path = require('path')
-const jwt = require('jsonwebtoken')
-const router = express.Router()
+import jwt from 'jsonwebtoken';
+import { Router, Request, Response } from 'express';
+import { User, addApprovedClient, removeApprovedClient } from '../services/user';
+
+const router = Router();
 
 const SECRET_KEY = 'xxxxxxx'
 
-router.get('/client_metadata_endpoint', (req, res) => {
+router.get('/client_metadata_endpoint', (req: Request, res: Response) => {
   const hostname = req.hostname
 
   // Check if the hostname is in the list of supportedIDPOrigins
@@ -20,30 +21,31 @@ router.get('/client_metadata_endpoint', (req, res) => {
   }
 })
 
-router.get('/accounts_endpoint', (req, res) => {
+router.get('/accounts_endpoint', (req: Request, res: Response) => {
   console.log('cookie:' + req.get('cookie'))
   if (!req.session.user) {
     return res.json({
       accounts: []
     }) // Return an empty result if no user is logged in
   }
-  const { email, name, avatarUrl, accountId, approved_clients } =
-    req.session.user
+
+  const currentUser = req.session.user
+
   return res.json({
     accounts: [
       {
-        id: accountId,
-        name: name,
-        given_name: name,
-        email: email,
-        picture: avatarUrl,
-        approved_clients: approved_clients
+        id: currentUser.accountId,
+        name: currentUser.name,
+        given_name: currentUser.name,
+        email: currentUser.email,
+        picture: currentUser.avatarUrl,
+        approved_clients: currentUser.approved_clients
       }
     ]
   })
 })
 
-router.post('/token_endpoint', (req, res) => {
+router.post('/token_endpoint', (req: Request, res: Response) => {
   if (!req.session.user) {
     return res.json({}) // Return an empty result if no user is logged in
   }
@@ -78,24 +80,17 @@ router.post('/token_endpoint', (req, res) => {
   }
 
   if (disclosure_text_shown) {
-    // Add origin to the approved_clients array in the session
-    if (!req.session.user.approved_clients) {
-      req.session.user.approved_clients = []
-    }
-    if (!req.session.user.approved_clients.includes(client_id)) {
-      req.session.user.approved_clients.push(client_id)
-    }
+    const userManager = req.userManager
+    const currentUser = userManager.getUser(email, req.hostname)
 
-    // Add origin to the approved_clients array in the in-memory user map
-    const currentUser = req.users.get(email)
-    if (!currentUser.approved_clients) {
-      currentUser.approved_clients = []
-    }
-    if (!currentUser.approved_clients.includes(client_id)) {
-      currentUser.approved_clients.push(client_id)
+    // Add the client from the list of approved clients and update the session
+    if (currentUser) {
+      addApprovedClient(currentUser,client_id)
+      req.session.user.approved_clients = [...currentUser.approved_clients]
     }
   }
 
+  // Generate a JWT token
   const token = jwt.sign(
     {
       sub: account_id_session,
@@ -113,7 +108,7 @@ router.post('/token_endpoint', (req, res) => {
   console.log(jwt.decode(token))
 })
 
-router.post('/revocation_endpoint', (req, res) => {
+router.post('/revocation_endpoint', (req: Request, res: Response) => {
   console.log('Referer:' + req.get('Referer'))
   console.log('cookie:' + req.get('cookie'))
   console.log('sec-fedcm-csrf:' + req.get('sec-fedcm-csrf'))
@@ -121,4 +116,4 @@ router.post('/revocation_endpoint', (req, res) => {
   res.status(204).send()
 })
 
-module.exports = router
+export default router;

@@ -1,28 +1,26 @@
-const express = require('express')
-const router = express.Router()
-const bcrypt = require('bcrypt')
+import bcrypt from 'bcrypt';
+import { v4 as uuidv4 } from 'uuid';
+import { Router, Request, Response } from 'express';
+import { User,addApprovedClient, removeApprovedClient } from '../services/user';
 
-const { v4: uuidv4 } = require('uuid')
 
-/*// Temporary in-memory user storage
-const users = new Map()*/
+const router = Router();
 
 // User sign-up
-router.post('/signup', (req, res) => {
+router.post('/signup', (req: Request, res: Response) => {
   console.log('signup req:', req.body)
-  console.log('signup req:', req.users)
+  console.log('signup req:', req.userManager)
   const { email, name, secret } = req.body
 
-  //add check if req.users is undefined
-  if (!req.users) {
-    return res.status(400).send('req.users is undefined, check app.js')
+  if (!req.userManager) {
+    return res.status(400).send('User manager is not available, check app.js')
   }
 
   if (!email || !name || !secret) {
     return res.status(400).send('Email, name, and secret are required')
   }
 
-  if (req.users.has(email)) {
+  if (req.userManager.getUser(email, req.hostname)) {
     return res.status(409).send('An account with this email already exists')
   }
 
@@ -38,10 +36,11 @@ router.post('/signup', (req, res) => {
   )}.png`
 
   // Save the new user
-  req.users.set(email, { email, secret, name, accountId, avatarUrl })
+  const newUser: User = {email, secret, name, accountId, avatarUrl,approved_clients: []}
+  req.userManager.addUser(newUser, req.hostname)
 
-  // Store user information and secret in the session
-  req.session.user = { email, name, accountId, avatarUrl }
+  // Store user information in the session
+  req.session.user = newUser
 
   console.log('signup - req.session.user:', req.session.user)
   // Redirect to the root URL after successful account creation and sign-in
@@ -49,47 +48,47 @@ router.post('/signup', (req, res) => {
 })
 
 // User sign-in
-router.post('/signin', (req, res) => {
+router.post('/signin', (req: Request, res: Response) => {
   const { email, secret } = req.body
 
   if (!email || !secret) {
     return res.status(400).send('Email and password are required')
   }
 
-  const user = req.users.get(email)
+  const user = req.userManager.getUser(email, req.hostname)
 
   if (!user || user.secret !== secret) {
     return res.status(401).send('Invalid email or password')
   }
 
   // Store user information and secret in the session
-  req.session.user = { ...user }
+  req.session.user = user
+
   console.log('signin - req.session.user:', req.session.user)
   // Redirect to the root URL after successful sign-in
   res.redirect('/')
 })
 
-router.post('/remove_client', (req, res) => {
+router.post('/remove_client', (req: Request, res: Response) => {
   const { client_id } = req.body
-  if (!req.session.user || !req.users) {
+  if (!req.userManager) {
     return res.redirect('/')
   }
 
-  const { email, approved_clients } = req.session.user
-  const user = req.users.get(email)
+  const { email } = req.session.user
+  const currentUser = req.userManager.getUser(email, req.hostname)
 
-  if (user && approved_clients && user.approved_clients) {
-    // Remove the client_id from both req.user and req.session.user approved_clients
-    user.approved_clients = user.approved_clients.filter(id => id !== client_id)
-    req.session.user.approved_clients =
-      req.session.user.approved_clients.filter(id => id !== client_id)
+  // Remove the client from the list of approved clients and update the session
+  if (currentUser) {
+    removeApprovedClient(currentUser, client_id)
+    req.session.user.approved_clients = [...currentUser.approved_clients]
   }
 
   res.redirect('/')
 })
 
 // User sign-out
-router.post('/signout', (req, res) => {
+router.post('/signout', (req: Request, res: Response) => {
   if (req.session) {
     req.session.destroy(err => {
       if (err) {
@@ -102,4 +101,4 @@ router.post('/signout', (req, res) => {
   }
 })
 
-module.exports = router
+export default router;
