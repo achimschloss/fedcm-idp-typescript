@@ -1,11 +1,17 @@
 import jwt from 'jsonwebtoken';
 import { Router, Request, Response } from 'express';
-import { User, addApprovedClient, removeApprovedClient } from '../services/user';
+import { addApprovedClient } from '../services/user';
 
 const router = Router();
 
 const SECRET_KEY = 'xxxxxxx'
 
+
+/**
+ * Client metadata endpoint.
+ * @see https://fedidcg.github.io/FedCM/#idp-api-client-id-metadata-endpoint
+ * @route GET /client_metadata_endpoint
+ */
 router.get('/client_metadata_endpoint', (req: Request, res: Response) => {
   const hostname = req.hostname
 
@@ -21,6 +27,11 @@ router.get('/client_metadata_endpoint', (req: Request, res: Response) => {
   }
 })
 
+/**
+ * Accounts endpoint. 
+ * @see https://fedidcg.github.io/FedCM/#idp-api-accounts-endpoint
+ * @route GET /accounts_endpoint
+ */
 router.get('/accounts_endpoint', (req: Request, res: Response) => {
   console.log('cookie:' + req.get('cookie'))
   if (!req.session.user) {
@@ -45,6 +56,11 @@ router.get('/accounts_endpoint', (req: Request, res: Response) => {
   })
 })
 
+/**
+ * Token endpoint.
+ * @see https://fedidcg.github.io/FedCM/#idp-api-id-assertion-endpoint
+ * @route POST /token_endpoint
+ */
 router.post('/token_endpoint', (req: Request, res: Response) => {
   if (!req.session.user) {
     return res.json({}) // Return an empty result if no user is logged in
@@ -108,6 +124,10 @@ router.post('/token_endpoint', (req: Request, res: Response) => {
   console.log(jwt.decode(token))
 })
 
+/**
+ * Revocation endpoint.
+ * @route POST /revocation_endpoint
+ */
 router.post('/revocation_endpoint', (req: Request, res: Response) => {
   console.log('Referer:' + req.get('Referer'))
   console.log('cookie:' + req.get('cookie'))

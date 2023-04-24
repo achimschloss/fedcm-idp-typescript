@@ -1,12 +1,15 @@
 import bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 import { Router, Request, Response } from 'express';
-import { User,addApprovedClient, removeApprovedClient } from '../services/user';
+import { User, removeApprovedClient } from '../services/user';
 
 
 const router = Router();
 
-// User sign-up
+/**
+ * User sign-up endpoint.
+ * @route POST /signup
+ */
 router.post('/signup', (req: Request, res: Response) => {
   console.log('signup req:', req.body)
   console.log('signup req:', req.userManager)
@@ -47,7 +50,10 @@ router.post('/signup', (req: Request, res: Response) => {
   res.redirect('/')
 })
 
-// User sign-in
+/**
+ * User sign-in endpoint.
+ * @route POST /signin
+ */
 router.post('/signin', (req: Request, res: Response) => {
   const { email, secret } = req.body
 
@@ -69,6 +75,10 @@ router.post('/signin', (req: Request, res: Response) => {
   res.redirect('/')
 })
 
+/**
+ * Endpoint for removing a client from the user's list of approved clients.
+ * @route POST /remove_client
+ */
 router.post('/remove_client', (req: Request, res: Response) => {
   const { client_id } = req.body
   if (!req.userManager) {
@@ -87,7 +97,10 @@ router.post('/remove_client', (req: Request, res: Response) => {
   res.redirect('/')
 })
 
-// User sign-out
+/**
+ * User sign-out endpoint.
+ * @route POST /signout
+ */
 router.post('/signout', (req: Request, res: Response) => {
   if (req.session) {
     req.session.destroy(err => {

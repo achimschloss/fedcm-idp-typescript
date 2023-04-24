@@ -2,7 +2,11 @@ import { Router, Request, Response } from 'express';
 
 const router = Router();
 
-// Render the signed_in or index page based on the user session
+/**
+ * Index route.
+ * Renders the 'signed_in' or 'index' page based on the user session.
+ * @route GET /
+ */
 router.get('/', (req: Request, res: Response) => {
   console.log('index - req.session.user:', req.session.user);
   if (req.session && req.session.user) {
@@ -17,7 +21,12 @@ router.get('/', (req: Request, res: Response) => {
   }
 });
 
-// Provide web identity metadata for supported IDP origins
+/**
+ * Web identity metadata route.
+ * Provides web identity metadata for supported IDP origins.
+ * @see https://fedidcg.github.io/FedCM/#idp-api-well-known
+ * @route GET /.well-known/web-identity
+ */
 router.get('/.well-known/web-identity', (req: Request, res: Response) => {
   const hostname = req.hostname;
   if (req.supportedIDPOrigins.includes(hostname)) {
@@ -26,8 +35,12 @@ router.get('/.well-known/web-identity', (req: Request, res: Response) => {
     res.send('hello from other domains');
   }
 });
-
-// Serve the federation metadata configuration (fedcm.json) for the IDP
+/**
+ * Federation metadata configuration route.
+ * Serves the federation metadata configuration (fedcm.json) for the IDP.
+ * @see https://fedidcg.github.io/FedCM/#idp-api-manifest
+ * @route GET /fedcm.json
+ */
 router.get('/fedcm.json', (req: Request, res: Response) => {
   if (req.IDPMetadata) {
     res.json(req.IDPMetadata);

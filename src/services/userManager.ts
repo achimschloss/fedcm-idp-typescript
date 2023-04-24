@@ -1,24 +1,49 @@
 // Import the User interface
 import { User } from "./user";
 
-export class UserManager {
-  private userMaps: { [hostname: string]: Map<string, User> };
 
+/**
+ * UserManager class is responsible for managing user data.
+ * It provides methods for retrieving, adding, and deleting users.
+ */
+export class UserManager {
+
+  // Maps hostnames to a Map of users, where the key is the user's email.
+  private userMaps: Record<string, Map<string, User>>;
+
+
+  /**
+   * Creates a new UserManager instance and initializes user maps for each hostname.
+   * @param hostnames {string[]} An array of hostnames.
+   */
   constructor(hostnames: string[]) {
     this.userMaps = {};
+
     // Initialize user maps for each hostname
     for (const hostname of hostnames) {
       this.userMaps[hostname] = new Map();
     }
   }
 
-  // Retrieves a user object by email and hostname
+
+  /**
+   * Retrieves a user object by email and hostname.
+   * @param email {string} The email of the user.
+   * @param hostname {string} The hostname associated with the user.
+   * @returns {User | undefined} The user object if found, otherwise undefined.
+   */
   getUser(email: string, hostname: string): User | undefined {
     const userMap = this.userMaps[hostname];
     return userMap ? userMap.get(email) : undefined;
   }
 
-  // Adds a new user object to the specified hostname
+
+  /**
+   * Adds a new user object to the specified hostname.
+   * @param newUser {User} The new user object to be added.
+   * @param hostname {string} The hostname associated with the user.
+   * @throws {Error} If the user map is not found for the hostname or the user already exists.
+   */
   addUser(newUser: User, hostname: string) {
     const userMap = this.userMaps[hostname];
     if (!userMap) {
@@ -30,7 +55,12 @@ export class UserManager {
     userMap.set(newUser.email, newUser);
   }
 
-  // Deletes a user object by email and hostname
+
+  /**
+   * Deletes a user object by email and hostname.
+   * @param email {string} The email of the user.
+   * @param hostname {string} The hostname associated with the user.
+   */
   deleteUser(email: string, hostname: string) {
     const userMap = this.userMaps[hostname];
     if (userMap) {
@@ -38,3 +68,4 @@ export class UserManager {
     }
   }
 }
+

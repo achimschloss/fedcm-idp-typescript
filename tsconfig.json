@@ -18,6 +18,6 @@
   },
   "include": [
     "src/**/*",
-    "src/@types/*.d.ts"
-, "src/public"  ]
+    "src/@types/*.d.ts",
+    "src/public"  ]
 }

@@ -31,7 +31,7 @@ declare global {
       userManager: UserManager;
       clientMetaData: any;
       supportedIDPOrigins: string[];
-      IDPMetadata: any;
+      IDPMetadata: IDPMetadata;
     }
   }
 }
