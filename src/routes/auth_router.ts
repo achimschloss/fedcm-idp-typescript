@@ -11,8 +11,7 @@ const router = Router();
  * @route POST /signup
  */
 router.post('/signup', (req: Request, res: Response) => {
-  console.log('signup req:', req.body)
-  console.log('signup req:', req.userManager)
+
   const { email, name, secret } = req.body
 
   if (!req.userManager) {
@@ -45,7 +44,7 @@ router.post('/signup', (req: Request, res: Response) => {
   // Store user information in the session
   req.session.user = newUser
 
-  console.log('signup - req.session.user:', req.session.user)
+  //console.log('signup - req.session.user:', req.session.user)
   // Redirect to the root URL after successful account creation and sign-in
   res.redirect('/')
 })
@@ -70,7 +69,7 @@ router.post('/signin', (req: Request, res: Response) => {
   // Store user information and secret in the session
   req.session.user = user
 
-  console.log('signin - req.session.user:', req.session.user)
+  //console.log('signin - req.session.user:', req.session.user)
   // Redirect to the root URL after successful sign-in
   res.redirect('/')
 })

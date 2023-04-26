@@ -8,7 +8,7 @@ const router = Router();
  * @route GET /
  */
 router.get('/', (req: Request, res: Response) => {
-  console.log('index - req.session.user:', req.session.user);
+  //console.log('index - req.session.user:', req.session.user);
   if (req.session && req.session.user) {
     res.render('signed_in', {
       user: req.session.user,

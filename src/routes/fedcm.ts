@@ -33,7 +33,7 @@ router.get('/client_metadata_endpoint', (req: Request, res: Response) => {
  * @route GET /accounts_endpoint
  */
 router.get('/accounts_endpoint', (req: Request, res: Response) => {
-  console.log('cookie:' + req.get('cookie'))
+  //console.log('cookie:' + req.get('cookie'))
   if (!req.session.user) {
     return res.json({
       accounts: []
@@ -121,7 +121,7 @@ router.post('/token_endpoint', (req: Request, res: Response) => {
   )
 
   res.json({ token: token })
-  console.log(jwt.decode(token))
+ //console.log(jwt.decode(token))
 })
 
 /**

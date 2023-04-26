@@ -83,7 +83,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   req.IDPMetadata = JSON.parse(
     JSON.stringify(metadata).replace('{baseUrl}', baseUrl)
   )
-  console.log('req.IDPMetadata', req.IDPMetadata)
+  //console.log('req.IDPMetadata', req.IDPMetadata)
   next()
 })
 
