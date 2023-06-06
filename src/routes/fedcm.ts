@@ -69,7 +69,8 @@ router.post('/token_endpoint', (req: Request, res: Response) => {
     client_id,
     nonce,
     account_id: account_id_request,
-    disclosure_text_shown
+    disclosure_text_shown,
+    scope
   } = req.body
 
   const {
@@ -107,33 +108,50 @@ router.post('/token_endpoint', (req: Request, res: Response) => {
   }
 
   // Generate a JWT token
-  const token = jwt.sign(
-    {
+  // Default JWT payload
+    let jwtPayload: {
+      sub: string,
+      nonce: string,
+      exp: number,
+      iat: number,
+      email?: string,
+      name?: string,
+      picture?: string
+    } = {
       sub: account_id_session,
       nonce: nonce,
-      name: name,
-      email: email,
       exp: new Date().getTime() + 1000 * 60 * 60 * 24,
       iat: new Date().getTime(),
-      picture: avatarUrl
-    },
-    SECRET_KEY
-  )
+    };
+
+  // Support default and AuthZ use-case (scope is optional)
+  // If scope is present we add the corresponding properties to the JWT payload
+  if (scope) {
+    // Add properties based on the scope
+    if (scope.includes('email')) {
+      jwtPayload.email = email;
+    }
+    if (scope.includes('name')) {
+      jwtPayload.name = name;
+    }
+    if (scope.includes('picture')) {
+      jwtPayload.picture = avatarUrl;
+    }
+  }
+  // If scope is not present we add all properties to the JWT payload
+  // This means that the client is requesting all properties in the current FedCM design
+  else {
+    // Add all properties
+    jwtPayload.email = email;
+    jwtPayload.name = name;
+    jwtPayload.picture = avatarUrl;
+  }
+
+
+  const token = jwt.sign(jwtPayload, SECRET_KEY);
 
   res.json({ token: token })
  //console.log(jwt.decode(token))
-})
-
-/**
- * Revocation endpoint.
- * @route POST /revocation_endpoint
- */
-router.post('/revocation_endpoint', (req: Request, res: Response) => {
-  console.log('Referer:' + req.get('Referer'))
-  console.log('cookie:' + req.get('cookie'))
-  console.log('sec-fedcm-csrf:' + req.get('sec-fedcm-csrf'))
-  console.log('Body:' + JSON.stringify(req.body))
-  res.status(204).send()
 })
 
 export default router;

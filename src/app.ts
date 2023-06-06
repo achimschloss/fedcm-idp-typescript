@@ -17,8 +17,8 @@ import fedcmRouter from './routes/fedcm';
 import authRouter from './routes/auth_router';
 
 // IDP Metadata
-import IDPMetadataConfig from './config/idp_metadata.json';
-import { IDPMetadata } from './config/idp_metadata.interface';
+import SupportedIDPMetadata from './config/idp_metadata.json';
+import { IDPMetadata, IDPMetadataConfig } from './config/idp_metadata.interface';
 
 // RP Metadata
 import clientMetaDataConfig from './config/client_metadata.json';
@@ -51,7 +51,7 @@ app.use(
 )
 
 // Define a constant for the supported hostnames
-const supportedIDPOrigins = Object.keys(IDPMetadataConfig)
+const supportedIDPOrigins = Object.keys(SupportedIDPMetadata)
 
 // Create a in-memory User Manager (keyed by hostname) initialized per hostname automatically
 const userManager = new UserManager(supportedIDPOrigins)
@@ -67,7 +67,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   const port = isLocalhost ? `:${req.socket.localPort}` : ''
   const baseUrl = `${req.protocol}://${req.hostname}${port}`
 
-  const metadata = (IDPMetadataConfig as IDPMetadata)[hostname];
+  const metadata = (SupportedIDPMetadata as IDPMetadataConfig)[hostname];
 
   // Add userManager to the req object
   req.userManager = userManager
@@ -82,7 +82,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   // replace {baseUrl} with the actual base URL to use (based on hostname)
   req.IDPMetadata = JSON.parse(
     JSON.stringify(metadata).replace('{baseUrl}', baseUrl)
-  )
+  );
   //console.log('req.IDPMetadata', req.IDPMetadata)
   next()
 })

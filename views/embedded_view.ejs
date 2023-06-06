@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      padding: 0;
+      margin: 0;
+      background-color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    #button {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 10px;
+      background-color: #f8f9fa;
+      border: 1px solid #495057;
+      /* dark outline */
+      border-radius: 10px;
+      /* less rounded corners */
+      width: auto;
+      height: auto;
+    }
+
+    #button button {
+      display: flex;
+      align-items: center;
+      border: none;
+      background: none;
+      padding: 0;
+      cursor: pointer;
+      font-size: 16px;
+      color: #495057;
+      font-family: Arial, sans-serif;
+    }
+
+    #button button img {
+      height: 30px;
+      border-radius: 50%;
+      margin-right: 10px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="button" style="display: none">
+    <button id="string">
+      <img id="picture" />
+      <span id="user-name">
+      </span>
+    </button>
+  </div>
+</body>
+
+</html>
+
+
+<script>
+  async function main() {
+    if (!window.IdentityCredential) {
+      return;
+    }
+
+    const userInfo = await login();
+
+    if (userInfo) {
+      document.getElementById("picture").src = "<%= idp_logo %>";
+      document.getElementById("user-name").innerText = `Continue as ${userInfo.name}`;
+      document.getElementById("button").style.display = "flex";
+    } else {
+      document.getElementById("button").style.display = "none";
+    }
+  }
+
+  async function login() {
+    try {
+      const user_info = await IdentityProvider.getUserInfo(
+        {
+          configURL: "<%= configURL %>",
+          clientId: "<%= client_id %>"
+        }
+      );
+
+      return user_info.length > 0 ? user_info[0] : null;
+
+    } catch (e) {
+      console.log("Cannot get user info");
+      console.log(e);
+      return null;
+    }
+  }
+  // disabled for now
+  main();
+</script>
+</body>
