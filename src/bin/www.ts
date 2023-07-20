@@ -16,6 +16,9 @@ import * as http from 'http';
 // Check if the HEROKU_APP_NAME environment variable is set
 var isHeroku = !!process.env.HEROKU_APP_NAME
 
+// Check if the LOCALHOST environment variable is set
+var isLocalhost = !!process.env.LOCALHOST
+
 /**
  * Get port from environment and store in Express.
  */
@@ -24,13 +27,16 @@ var port = normalizePort(process.env.PORT || '443')
 app.set('port', port)
 
 /**
- * Create server based on the environment (Heroku or not).
+ * Create server based on the environment (Heroku, localhost or domain).
  */
 
 var server: http.Server | https.Server
 
 if (isHeroku) {
   // For Heroku, create an HTTP server
+  server = http.createServer(app);
+} else if (isLocalhost) {
+  // For localhost, also create an HTTP server
   server = http.createServer(app);
 } else {
   // For non-Heroku environments, create an HTTPS server with SNI context
