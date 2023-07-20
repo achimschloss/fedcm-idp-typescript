@@ -11,7 +11,7 @@ To get started:
 
 1. Clone this repository
 2. Install node.js and npm
-3. Install Dependencies
+3. Install dependencies
 
    ```shell
    npm install
@@ -29,7 +29,7 @@ To get started:
    npm run start-local
    ```
 
-   Note that as of now running on localhost will only allow you to play around with the base IDP functionality given the FedCM-APIs cannot be called in a non secure context.
+Note that as of now running on localhost will only allow you to play around with the base IDP functionality given the FedCM-APIs cannot be called in a non secure context.
 
 ## Deployment options
 
@@ -37,29 +37,33 @@ This setup currently supports three deployment options. It can be run on localho
 
 ### Default deployment
 
-The default deployment assumes that the setup is using dedicated eTLD+1s to run IDPs. To configure those simply set the environment variables `DOMAIN_1` and `DOMAIN_2` and run the IDP(s).
+The default deployment assumes that the setup is using dedicated eTLD+1s to run IDPs. To configure those simply set the environment variables `DOMAIN_1` and `DOMAIN_2` and run the IDP(s). This can simply be done by updating the `start.sh` script in the root of the repository and replace the placeholders.
+
+Start the server once the domains are set using
 
 ```shell
 npm start
 ```
 
-This setup currently supports running the two IDPs configured via the env variables using one https server with separate SNI context. This can easily be extended to also test more complex multi IDP scenarios with multiple eTLD+1 domain, as of now it will always try to load two certificates this can easily be changed. 
+This setup currently supports running the two IDPs configured via the env variables using one https server with separate SNI contexts for each domain. This can easily be extended to also test more complex multi IDP scenarios with multiple eTLD+1 domains, as of now it will always try to load two certificates. This can easily be changed in the future.
 
 ### Localhost
 
-Start server using, see note above. This will not enable you to test the FedCM APIs
+Start server using.
 
 ```shell
 npm start-local
 ```
 
+This will not enable you to test the FedCM APIs, see note above
+
 ### Heroku
 
-This setup can be deployed via Heroku PaaS - Follow the respective instructions [here](https://devcenter.heroku.com/articles/git) - Other than Heroku specifics not further configuration is necessary, the setup will automatically fetch the Heroku app domain and adjust accordingly.
+This setup can be deployed via Heroku PaaS - Follow the respective instructions [here](https://devcenter.heroku.com/articles/git) - Other than Heroku specifics no further configuration is necessary, the setup will automatically fetch the Heroku app domain and adjust accordingly.
 
 ## Certificate configuration
 
-The setups expects a `certs` subdirectory in the root of the project containing a subdirectory for the configured domains. Basic setup:
+The setup expects a `certs` subdirectory in the root of the project containing a subdirectory for the configured domains. Basic setup:
 
 Create the certs directory
 
@@ -81,11 +85,11 @@ Make sure access rights to both the folders and the files are setup correctly.
 
 ### Clients
 
-Supported Clients must be configured in `src/config/client_metadata.json`. Note that eligible clients and origins are validated as defined in the FedCM specification.  
+Supported Clients must be configured in `src/config/client_metadata.json`. Note that eligible clients and origins are validated as defined in the FedCM specification.
 
 ### IDPs
 
-IDP configuration is contained in `src/config/client_metadata.json`. In order to host an IDP on a domain other than localhost, add a respective entry to the JSON configuration. The branding configuration can be adjusted to you needs. **Do not change the endpoint configuration**
+IDP configuration is contained in `src/config/idp_metadata.json`. In order to host an IDP on a domain other than localhost, add a respective entry to the JSON configuration object (may contain multiple). The branding configuration can be adjusted to you needs. **Do not change the endpoint configuration**
 
 ```json
     "your-domain-goes-here": {
@@ -103,11 +107,15 @@ IDP configuration is contained in `src/config/client_metadata.json`. In order to
                 }
             ]
         }
-    },
+    }
 ```
 
 `{baseUrl}` is automatically replaced at runtime, additional IDP logos must be place in `src/public/images`
 
-## Supported Features
+## Supported features
+
+TODO
+
+## Supported Browsers
 
 TODO
