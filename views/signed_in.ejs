@@ -58,16 +58,17 @@
                         Out</button>
                 </form>
     </div>
-    <!-- Add a divider, some spacing, and a new div for the "Go Back to RP" button -->
-    <hr class="my-4 w-full max-w-md">
-    <div class="w-full max-w-md px-4 py-2 bg-white rounded-lg shadow-md">
-        <div class="w-full text-center">
-            <a href="https://furtive-candy-cauliflower.glitch.me/">
-                <button class="min-w-full bg-green-500 hover:bg-green-600 text-white font-medium py-2 rounded-md">Go
-                    Back to RP</button>
-            </a>
+    <% for (let clientId in clientMetaData) { %>
+        <div class="w-full max-w-md px-4 py-2 bg-white rounded-lg shadow-md">
+            <div class="w-full text-center">
+                <a href="<%= clientMetaData[clientId].origin %>">
+                    <button class="min-w-full bg-green-500 hover:bg-green-600 text-white font-medium py-2 rounded-md">
+                        Go Back to <%= clientMetaData[clientId].name %>
+                    </button>
+                </a>
+            </div>
         </div>
-    </div>
+        <% } %>
 </body>
 
 </html>

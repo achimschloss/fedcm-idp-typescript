@@ -1,10 +1,6 @@
 {
-    "asdfasdfw23e4234qw": {
-        "name": "Sample Client Cauliflower",
-        "origin": "https://furtive-candy-cauliflower.glitch.me"
-    },
-    "234q2asdfasdfasdfa": {
-        "name": "Sample Client Cauliflower",
-        "origin": "https://furtive-candy-cauliflower.glitch.me"
-    }
+  "yourClientID": {
+    "name": "Sample Client 1",
+    "origin": "https://yourrelyingparty.com"
+  }
 }

@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# This defaults to our own test domains currently
-# TODO
-export DOMAIN_1=${DOMAIN_1:-"idp-a-test.de"}
-export DOMAIN_2=${DOMAIN_2:-"idp-b-test.de"}
+# Make sure to replace this with your own domains if not running on localhost
+# Make sure to provide the necessary certificates in the filesystem as described in README.md
+export DOMAIN_1="idp.example1.com"
+export DOMAIN_2="idp.example2.com"
 
 node  dist/bin/www.js
