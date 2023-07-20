@@ -1,18 +1,18 @@
 {
-    "localhost": {
-        "accounts_endpoint": "/fedcm/accounts_endpoint",
-        "client_metadata_endpoint": "/fedcm/client_metadata_endpoint",
-        "id_assertion_endpoint": "/fedcm/token_endpoint",
-        "revocation_endpoint": "/fedcm/revocation_endpoint",
-        "branding": {
-            "background_color": "rgb(255, 255, 204)",
-            "color": "0xffffff",
-            "icons": [
-                {
-                    "url": "{baseUrl}/images/web.webp",
-                    "size": 32
-                }
-            ]
+  "localhost": {
+    "accounts_endpoint": "/fedcm/accounts_endpoint",
+    "client_metadata_endpoint": "/fedcm/client_metadata_endpoint",
+    "id_assertion_endpoint": "/fedcm/token_endpoint",
+    "revocation_endpoint": "/fedcm/revocation_endpoint",
+    "branding": {
+      "background_color": "rgb(255, 255, 204)",
+      "color": "0xffffff",
+      "icons": [
+        {
+          "url": "{baseUrl}/images/idp-1.png",
+          "size": 32
         }
+      ]
     }
+  }
 }
