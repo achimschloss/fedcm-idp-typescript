@@ -86,8 +86,8 @@ router.post('/token_endpoint', (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Invalid Sec-Fetch-Dest header' })
   }
   // check if req origin matches the req.clientMetaData expected origin for this client_id
-  if (req.get('Origin') !== req.clientMetaData[client_id].origin) {
-    return res.status(400).json({ error: 'Invalid Origin' })
+  if (!req.clientMetaData[client_id] || req.get('Origin') !== req.clientMetaData[client_id].origin) {
+    return res.status(400).json({ error: 'Invalid Origin' });
   }
 
   // Check if account_id in req.body matches accountId in req.session.user
