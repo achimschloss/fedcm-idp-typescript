@@ -45,7 +45,8 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.HEROKU_APP_NAME ? false : true
+      // Set to secure in case we are neither running on localhost nor on Heroku
+      secure: process.env.LOCALHOST ? false : (process.env.HEROKU_APP_NAME ? false : true)
     }
   })
 )
