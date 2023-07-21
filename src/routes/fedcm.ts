@@ -33,7 +33,13 @@ router.get('/client_metadata_endpoint', (req: Request, res: Response) => {
  * @route GET /accounts_endpoint
  */
 router.get('/accounts_endpoint', (req: Request, res: Response) => {
-  //console.log('cookie:' + req.get('cookie'))
+
+  // Security checks
+  // check if Sec-Fetch-Dest header is present and set to webidentity
+  if (req.get('Sec-Fetch-Dest') !== 'webidentity') {
+    return res.status(400).json({ error: 'Invalid Sec-Fetch-Dest header' })
+  }
+
   if (!req.session.user) {
     return res.json({
       accounts: []
@@ -87,12 +93,14 @@ router.post('/token_endpoint', (req: Request, res: Response) => {
   }
   // check if req origin matches the req.clientMetaData expected origin for this client_id
   if (!req.clientMetaData[client_id] || req.get('Origin') !== req.clientMetaData[client_id].origin) {
+    console.error(`Invalid Origin: ${req.get('Origin')} for client_id: ${client_id}`);
     return res.status(400).json({ error: 'Invalid Origin' });
   }
 
   // Check if account_id in req.body matches accountId in req.session.user
   // This is to deal with situation where a different user is logged in with the IDP
   if (account_id_request !== account_id_session) {
+    console.error(`Invalid account_id: ${account_id_request}`);
     return res.status(400).json({ error: 'Invalid account_id' })
   }
 
@@ -102,27 +110,27 @@ router.post('/token_endpoint', (req: Request, res: Response) => {
 
     // Add the client from the list of approved clients and update the session
     if (currentUser) {
-      addApprovedClient(currentUser,client_id)
+      addApprovedClient(currentUser, client_id)
       req.session.user.approved_clients = [...currentUser.approved_clients]
     }
   }
 
   // Generate a JWT token
   // Default JWT payload
-    let jwtPayload: {
-      sub: string,
-      nonce: string,
-      exp: number,
-      iat: number,
-      email?: string,
-      name?: string,
-      picture?: string
-    } = {
-      sub: account_id_session,
-      nonce: nonce,
-      exp: new Date().getTime() + 1000 * 60 * 60 * 24,
-      iat: new Date().getTime(),
-    };
+  let jwtPayload: {
+    sub: string,
+    nonce: string,
+    exp: number,
+    iat: number,
+    email?: string,
+    name?: string,
+    picture?: string
+  } = {
+    sub: account_id_session,
+    nonce: nonce,
+    exp: new Date().getTime() + 1000 * 60 * 60 * 24,
+    iat: new Date().getTime(),
+  };
 
   // Support default and AuthZ use-case (scope is optional)
   // If scope is present we add the corresponding properties to the JWT payload
@@ -151,7 +159,7 @@ router.post('/token_endpoint', (req: Request, res: Response) => {
   const token = jwt.sign(jwtPayload, SECRET_KEY);
 
   res.json({ token: token })
- //console.log(jwt.decode(token))
+  //console.log(jwt.decode(token))
 })
 
 export default router;

@@ -4,7 +4,7 @@
  * Module dependencies.
  */
 
-import {app} from '../app';
+import { app } from '../app';
 import debug from 'debug';
 const log = debug('fedcm:server');
 import * as https from 'https';
@@ -12,6 +12,7 @@ import * as tls from 'tls';
 import * as fs from 'fs';
 import * as http from 'http';
 
+import { IDPMetadataConfig } from '../config/idp_metadata.interface';
 
 // Check if the HEROKU_APP_NAME environment variable is set
 var isHeroku = !!process.env.HEROKU_APP_NAME
@@ -39,24 +40,26 @@ if (isHeroku) {
   // For localhost, also create an HTTP server
   server = http.createServer(app);
 } else {
-  // For non-Heroku environments, create an HTTPS server with SNI context
-  const domain_1 = process.env.DOMAIN_1!;
-  const domain_2 = process.env.DOMAIN_2!;
 
-  const credentials_site1 = {
-    key: fs.readFileSync(`./certs/${domain_1}/privkey.pem`, 'utf8'),
-    cert: fs.readFileSync(`./certs/${domain_1}/fullchain.pem`, 'utf8'),
-  };
+  const idpMetadataConfig: IDPMetadataConfig = require('../config/idp_metadata.json');
 
-  const credentials_site2 = {
-    key: fs.readFileSync(`./certs/${domain_2}/privkey.pem`, 'utf8'),
-    cert: fs.readFileSync(`./certs/${domain_2}/fullchain.pem`, 'utf8'),
-  };
+  const secureContext: { [key: string]: tls.SecureContext } = {};
 
-  const secureContext = {
-    [domain_1]: tls.createSecureContext(credentials_site1),
-    [domain_2]: tls.createSecureContext(credentials_site2),
-  };
+  for (const hostname in idpMetadataConfig) {
+    if (hostname !== 'localhost') {
+      const credentials = {
+        key: fs.readFileSync(`./certs/${hostname}/privkey.pem`, 'utf8'),
+        cert: fs.readFileSync(`./certs/${hostname}/fullchain.pem`, 'utf8'),
+      };
+
+      secureContext[hostname] = tls.createSecureContext(credentials);
+    }
+  }
+
+  if (Object.keys(secureContext).length === 0) {
+    console.error('No secure contexts were created. Check your certificate paths and hostnames.');
+    process.exit(1);
+  }
 
   const sniCallback = (servername: string, done: (err: Error | null, ctx: tls.SecureContext) => void) => {
     if (secureContext[servername]) {
@@ -85,7 +88,7 @@ server.on('listening', onListening)
  * Normalize a port into a number, string, or false.
  */
 
-function normalizePort (val: string) {
+function normalizePort(val: string) {
   var port = parseInt(val, 10)
 
   if (isNaN(port)) {
@@ -131,7 +134,7 @@ function onError(error: { syscall: string; code: any }): void {
  * Event listener for HTTP server "listening" event.
  */
 
-function onListening () {
+function onListening() {
   var addr = server.address()
   var bind = typeof addr === 'string' ? 'pipe ' + addr : 'port ' + addr.port
   debug('Listening on ' + bind)

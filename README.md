@@ -37,15 +37,14 @@ This setup currently supports three deployment options. It can be run on localho
 
 ### Default deployment
 
-The default deployment assumes that the setup is using dedicated eTLD+1s to run IDPs. To configure those simply set the environment variables `DOMAIN_1` and `DOMAIN_2` and run the IDP(s). This can simply be done by updating the `start.sh` script in the root of the repository and replace the placeholders.
+The default deployment assumes that the setup is using dedicated eTLD+1s to run IDPs.
+This setup currently supports running any number of IDP - supported IDP hostnames will be fetched from the `idp_metadata.json` configuration file and started automatically accordingly.
 
 Start the server once the domains are set using
 
 ```shell
 npm start
 ```
-
-This setup currently supports running the two IDPs configured via the env variables using one https server with separate SNI contexts for each domain. This can easily be extended to also test more complex multi IDP scenarios with multiple eTLD+1 domains, as of now it will always try to load two certificates. This can easily be changed in the future.
 
 ### Localhost
 
@@ -85,11 +84,11 @@ Make sure access rights to both the folders and the files are setup correctly.
 
 ### Clients
 
-Supported Clients must be configured in `src/config/client_metadata.json`. Note that eligible clients and origins are validated as defined in the FedCM specification.
+Supported Clients must be configured in `config/client_metadata.json`. Note that eligible clients and origins are validated as defined in the FedCM specification.
 
 ### IDPs
 
-IDP configuration is contained in `src/config/idp_metadata.json`. In order to host an IDP on a domain other than localhost, add a respective entry to the JSON configuration object (may contain multiple). The branding configuration can be adjusted to you needs. **Do not change the endpoint configuration**
+IDP configuration is contained in `config/idp_metadata.json`. In order to host an IDP on a domain other than localhost, add a respective entry to the JSON configuration object (may contain multiple). The branding configuration can be adjusted to you needs. **Do not change the endpoint configuration**
 
 ```json
     "your-domain-goes-here": {

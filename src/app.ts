@@ -17,13 +17,16 @@ import fedcmRouter from './routes/fedcm';
 import authRouter from './routes/auth_router';
 
 // IDP Metadata
-import SupportedIDPMetadata from './config/idp_metadata.json';
 import { IDPMetadata, IDPMetadataConfig } from './config/idp_metadata.interface';
 
 // RP Metadata
-import clientMetaDataConfig from './config/client_metadata.json';
 
 const app = express()
+
+// IDP Metadata
+const SupportedIDPMetadata: IDPMetadataConfig = require('./config/idp_metadata.json');
+// RP Metadata
+const clientMetaDataConfig = require('./config/client_metadata.json');
 
 declare global {
   namespace Express {

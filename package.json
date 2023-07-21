@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "clean": "rimraf dist",
-    "start": "./start.sh",
+    "start": "node ./dist/bin/www.js",
     "start-local": "LOCALHOST=true PORT=8080 node ./dist/bin/www.js",
     "build": "npm run clean && tsc && node copy-static.js",
     "postinstall": "if [ \"$NODE_ENV\" = \"production\" ]; then npm run build; fi"
