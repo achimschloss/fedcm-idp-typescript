@@ -30,6 +30,18 @@ document.addEventListener('DOMContentLoaded', () => {
       })
 
       if (response.ok) {
+        // In case this view is embedded in an FedCM Sign-Dialog, close it via the IdentityProvider API
+        if (window.IdentityProvider && IdentityProvider.close) {
+          try {
+            // Close the Sign-Dialog
+            IdentityProvider.close()
+          } catch (e) {
+            // Ignore the exception
+            console.info(
+              '`IdentityProvider.close()` was called but not in effect.'
+            )
+          }
+        }
         location.reload()
       } else {
         const errorText = await response.text()

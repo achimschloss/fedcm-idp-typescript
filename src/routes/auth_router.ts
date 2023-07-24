@@ -38,11 +38,14 @@ router.post('/signup', (req: Request, res: Response) => {
   )}.png`
 
   // Save the new user
-  const newUser: User = {email, secret, name, accountId, avatarUrl,approved_clients: []}
+  const newUser: User = { email, secret, name, accountId, avatarUrl, approved_clients: [] }
   req.userManager.addUser(newUser, req.hostname)
 
   // Store user information in the session
   req.session.user = newUser
+
+  // Set FedCM Sign-In status via header
+  res.set('IdP-SignIn-Status', 'action=signin');
 
   //console.log('signup - req.session.user:', req.session.user)
   // Redirect to the root URL after successful account creation and sign-in
@@ -68,6 +71,9 @@ router.post('/signin', (req: Request, res: Response) => {
 
   // Store user information and secret in the session
   req.session.user = user
+
+  // Set FedCM Sign-In status via header
+  res.set('IdP-SignIn-Status', 'action=signin');
 
   //console.log('signin - req.session.user:', req.session.user)
   // Redirect to the root URL after successful sign-in
@@ -101,6 +107,10 @@ router.post('/remove_client', (req: Request, res: Response) => {
  * @route POST /signout
  */
 router.post('/signout', (req: Request, res: Response) => {
+
+  // Set FedCM Sign-In status via header
+  res.set('IdP-SignIn-Status', 'action=signout-all');
+
   if (req.session) {
     req.session.destroy(err => {
       if (err) {
