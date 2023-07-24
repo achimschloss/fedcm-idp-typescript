@@ -4,6 +4,7 @@
     "client_metadata_endpoint": "/fedcm/client_metadata_endpoint",
     "id_assertion_endpoint": "/fedcm/token_endpoint",
     "revocation_endpoint": "/fedcm/revocation_endpoint",
+    "signin_url": "/",
     "branding": {
       "background_color": "rgb(255, 255, 204)",
       "color": "0xffffff",
