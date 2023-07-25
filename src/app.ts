@@ -10,6 +10,9 @@ import { UserManager } from './services/userManager';
 // Add routes for the index and sign-in pages
 import indexRouter from './routes/index';
 
+// Add route for metadata endpoints
+import metaDataRouter from './routes/metadata';
+
 // Add routes for the FedCM endpoints
 import fedcmRouter from './routes/fedcm';
 
@@ -100,8 +103,9 @@ app.use(express.json())
 app.use(express.static(path.join(__dirname, 'public')))
 
 // Set up routes
-app.use('/api/auth', authRouter)
 app.use('/', indexRouter)
+app.use('/', metaDataRouter)
+app.use('/api/auth', authRouter)
 app.use('/fedCM/', fedcmRouter)
 
 // Catch 404 and forward to error handler
