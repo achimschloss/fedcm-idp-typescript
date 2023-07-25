@@ -88,7 +88,7 @@ Supported Clients must be configured in `config/client_metadata.json`. Note that
 
 ### IDPs
 
-IDP configuration is contained in `config/idp_metadata.json`. In order to host an IDP on a domain other than localhost, add a respective entry to the JSON configuration object (may contain multiple). The branding configuration can be adjusted to you needs. **Do not change the endpoint configuration**
+IDP configuration is contained in `config/idp_metadata.json`. In order to host an IDP on a domain other than localhost, add a respective entry to the JSON configuration object (may contain multiple). The branding configuration can be adjusted to your needs. **Do not change the endpoint configuration**
 
 ```json
     "your-domain-goes-here": {
@@ -96,6 +96,7 @@ IDP configuration is contained in `config/idp_metadata.json`. In order to host a
         "client_metadata_endpoint": "/fedcm/client_metadata_endpoint",
         "id_assertion_endpoint": "/fedcm/token_endpoint",
         "revocation_endpoint": "/fedcm/revocation_endpoint",
+        "signin_url": "/",
         "branding": {
             "background_color": "rgb(255, 255, 204)",
             "color": "0xffffff",
@@ -113,8 +114,35 @@ IDP configuration is contained in `config/idp_metadata.json`. In order to host a
 
 ## Supported features
 
-TODO
+IDP User management:
 
-## Supported Browsers
+- Create account
+- Sign-in / Sign-out
+- Profile Page (show user info)
+- Approved Clients Management (display, revoke)
 
-TODO
+IDP:
+
+- Client registration (static, build time)
+- IDP registration (static, build time)
+- Baseline FedCM related security
+  - Clients checks (origin, referer, etc.)
+  - Accounts mismatch checks
+
+FedCM API:
+
+- Baseline APIs
+  - .well-known/web-identity
+  - IDP manifest (fedcm.json)
+  - accounts_endpoint
+  - id-assertion-endpoint
+- Extended APIs
+  - UserInfo API (personalized login button)
+  - IDP Sign-In API
+  - Limited Support for AuthZ (Scope management)
+
+## Known working browsers
+
+- Chrome 115, 116 (Android, MacOS)
+- Chrome Canary 117 (Android, MacOS)
+- Edge 115, 116 (Android, MacOS)
