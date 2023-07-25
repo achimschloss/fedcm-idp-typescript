@@ -1,8 +1,9 @@
 import jwt from 'jsonwebtoken';
 import { Router, Request, Response } from 'express';
 import { addApprovedClient } from '../services/user';
+import { checkSecFetchDest } from '../services/util';
 
-const router = Router();
+export const fedcmRouter = Router();
 
 const SECRET_KEY = 'xxxxxxx'
 
@@ -12,7 +13,7 @@ const SECRET_KEY = 'xxxxxxx'
  * @see https://fedidcg.github.io/FedCM/#idp-api-client-id-metadata-endpoint
  * @route GET /client_metadata_endpoint
  */
-router.get('/client_metadata_endpoint', (req: Request, res: Response) => {
+fedcmRouter.get('/client_metadata_endpoint', checkSecFetchDest, (req: Request, res: Response) => {
   const hostname = req.hostname
 
   // Check if the hostname is in the list of supportedIDPOrigins
@@ -32,13 +33,7 @@ router.get('/client_metadata_endpoint', (req: Request, res: Response) => {
  * @see https://fedidcg.github.io/FedCM/#idp-api-accounts-endpoint
  * @route GET /accounts_endpoint
  */
-router.get('/accounts_endpoint', (req: Request, res: Response) => {
-
-  // Security checks
-  // check if Sec-Fetch-Dest header is present and set to webidentity
-  if (req.get('Sec-Fetch-Dest') !== 'webidentity') {
-    return res.status(400).json({ error: 'Invalid Sec-Fetch-Dest header' })
-  }
+fedcmRouter.get('/accounts_endpoint', checkSecFetchDest, (req: Request, res: Response) => {
 
   if (!req.session.user) {
     return res.json({
@@ -67,7 +62,7 @@ router.get('/accounts_endpoint', (req: Request, res: Response) => {
  * @see https://fedidcg.github.io/FedCM/#idp-api-id-assertion-endpoint
  * @route POST /token_endpoint
  */
-router.post('/token_endpoint', (req: Request, res: Response) => {
+fedcmRouter.post('/token_endpoint', checkSecFetchDest, (req: Request, res: Response) => {
   if (!req.session.user) {
     return res.json({}) // Return an empty result if no user is logged in
   }
@@ -86,11 +81,6 @@ router.post('/token_endpoint', (req: Request, res: Response) => {
     accountId: account_id_session
   } = req.session.user
 
-  // Security checks
-  // check if Sec-Fetch-Dest header is present and set to webidentity
-  if (req.get('Sec-Fetch-Dest') !== 'webidentity') {
-    return res.status(400).json({ error: 'Invalid Sec-Fetch-Dest header' })
-  }
   // check if req origin matches the req.clientMetaData expected origin for this client_id
   if (!req.clientMetaData[client_id] || req.get('Origin') !== req.clientMetaData[client_id].origin) {
     console.error(`Invalid Origin: ${req.get('Origin')} for client_id: ${client_id}`);
@@ -169,7 +159,7 @@ router.post('/token_endpoint', (req: Request, res: Response) => {
  * @see https://github.com/fedidcg/FedCM/issues/382
  * @route GET /embedded
  */
-router.get('/embedded', (req, res) => {
+fedcmRouter.get('/embedded', (req, res) => {
   const hostname = req.hostname;
   const client_id = req.query.clientId as string;
   const iFrame_referer = req.get('Referer')?.replace(/\/$/, '') as string;
@@ -198,5 +188,3 @@ router.get('/embedded', (req, res) => {
     res.status(404).send('Configuration not found - please check app.js');
   }
 });
-
-export default router;

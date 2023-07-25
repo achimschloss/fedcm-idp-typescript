@@ -4,13 +4,13 @@ import { Router, Request, Response } from 'express';
 import { User, removeApprovedClient } from '../services/user';
 
 
-const router = Router();
+export const authRouter = Router();
 
 /**
  * User sign-up endpoint.
  * @route POST /signup
  */
-router.post('/signup', (req: Request, res: Response) => {
+authRouter.post('/signup', (req: Request, res: Response) => {
 
   const { email, name, secret } = req.body
 
@@ -56,7 +56,7 @@ router.post('/signup', (req: Request, res: Response) => {
  * User sign-in endpoint.
  * @route POST /signin
  */
-router.post('/signin', (req: Request, res: Response) => {
+authRouter.post('/signin', (req: Request, res: Response) => {
   const { email, secret } = req.body
 
   if (!email || !secret) {
@@ -84,7 +84,7 @@ router.post('/signin', (req: Request, res: Response) => {
  * Endpoint for removing a client from the user's list of approved clients.
  * @route POST /remove_client
  */
-router.post('/remove_client', (req: Request, res: Response) => {
+authRouter.post('/remove_client', (req: Request, res: Response) => {
   const { client_id } = req.body
   if (!req.userManager) {
     return res.redirect('/')
@@ -106,7 +106,7 @@ router.post('/remove_client', (req: Request, res: Response) => {
  * User sign-out endpoint.
  * @route POST /signout
  */
-router.post('/signout', (req: Request, res: Response) => {
+authRouter.post('/signout', (req: Request, res: Response) => {
 
   // Set FedCM Sign-In status via header
   res.set('IdP-SignIn-Status', 'action=signout-all');
@@ -122,5 +122,3 @@ router.post('/signout', (req: Request, res: Response) => {
     res.redirect('/')
   }
 })
-
-export default router;

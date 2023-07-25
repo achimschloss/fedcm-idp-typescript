@@ -8,21 +8,19 @@ import logger from 'morgan';
 import { UserManager } from './services/userManager';
 
 // Add routes for the index and sign-in pages
-import indexRouter from './routes/index';
+import { indexRouter } from './routes/index';
 
 // Add route for metadata endpoints
-import metaDataRouter from './routes/metadata';
+import { metaDataRouter } from './routes/metadata';
 
 // Add routes for the FedCM endpoints
-import fedcmRouter from './routes/fedcm';
+import { fedcmRouter } from './routes/fedcm';
 
 // Add routes for the auth endpoints (sign-in, sign-up, remove client)
-import authRouter from './routes/auth_router';
+import { authRouter } from './routes/auth_router';
 
 // IDP Metadata
 import { IDPMetadata, IDPMetadataConfig } from './config/idp_metadata.interface';
-
-// RP Metadata
 
 const app = express()
 
@@ -105,8 +103,8 @@ app.use(express.static(path.join(__dirname, 'public')))
 // Set up routes
 app.use('/', indexRouter)
 app.use('/', metaDataRouter)
-app.use('/api/auth', authRouter)
-app.use('/fedCM/', fedcmRouter)
+app.use('/api/auth/', authRouter)
+app.use('/fedcm/', fedcmRouter)
 
 // Catch 404 and forward to error handler
 app.use((req, res, next) => {

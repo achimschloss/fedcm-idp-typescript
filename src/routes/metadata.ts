@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
+import { checkSecFetchDest } from '../services/util';
 
-const metaDataRouter = Router();
+export const metaDataRouter = Router();
 
 /**
  * Web identity metadata route.
@@ -8,7 +9,7 @@ const metaDataRouter = Router();
  * @see https://fedidcg.github.io/FedCM/#idp-api-well-known
  * @route GET /.well-known/web-identity
  */
-metaDataRouter.get('/.well-known/web-identity', (req: Request, res: Response) => {
+metaDataRouter.get('/.well-known/web-identity', checkSecFetchDest, (req: Request, res: Response) => {
     const hostname = req.hostname;
     if (req.supportedIDPOrigins.includes(hostname)) {
         res.json({ provider_urls: [`https://${req.hostname}/fedcm.json`] });
@@ -23,12 +24,10 @@ metaDataRouter.get('/.well-known/web-identity', (req: Request, res: Response) =>
  * @see https://fedidcg.github.io/FedCM/#idp-api-manifest
  * @route GET /fedcm.json
  */
-metaDataRouter.get('/fedcm.json', (req: Request, res: Response) => {
+metaDataRouter.get('/fedcm.json', checkSecFetchDest, (req: Request, res: Response) => {
     if (req.IDPMetadata) {
         res.json(req.IDPMetadata);
     } else {
         res.status(404).send('Configuration not found - please check app.js');
     }
 });
-
-export default metaDataRouter;

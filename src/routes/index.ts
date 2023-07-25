@@ -1,13 +1,13 @@
 import { Router, Request, Response } from 'express';
 
-const router = Router();
+export const indexRouter = Router();
 
 /**
  * Index route.
  * Renders the 'signed_in' or 'index' page based on the user session.
  * @route GET /
  */
-router.get('/', (req: Request, res: Response) => {
+indexRouter.get('/', (req: Request, res: Response) => {
   //console.log('index - req.session.user:', req.session.user);
   if (req.session && req.session.user) {
     res.render('signed_in', {
@@ -20,5 +20,3 @@ router.get('/', (req: Request, res: Response) => {
     res.render('index', { req: req, IDPMetadata: req.IDPMetadata });
   }
 });
-
-export default router;
