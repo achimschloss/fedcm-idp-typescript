@@ -119,6 +119,7 @@ IDP User management:
 - Create account
 - Sign-in / Sign-out
 - Profile Page (show user info)
+- passkey support (single authenticator per user, passwordless login)
 - Approved Clients Management (display, revoke)
 
 IDP:
