@@ -16,6 +16,10 @@ certs
 .vscode/
 .idea/
 
+# PouchDB files
+devices/
+users/
+
 # Build files
 /build
 /dist
