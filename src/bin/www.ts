@@ -36,6 +36,8 @@ var server: http.Server | https.Server
 if (isHeroku) {
   // For Heroku, create an HTTP server
   server = http.createServer(app);
+  // Set trust proxy
+  app.set('trust proxy', true);
 } else if (isLocalhost) {
   // For localhost, also create an HTTP server
   server = http.createServer(app);
