@@ -142,7 +142,12 @@ authRouter.post('/verify-registration', async (req, res) => {
   const { email, name } = req.body
   const rpID = req.hostname
   const rpName = "TestIDP - " + req.hostname
-  const expectedOrigin = `${req.protocol}://${req.hostname}`
+
+  // Derive the base URL from the hostname and port (if localhost)
+  const isLocalhost =
+    req.hostname === 'localhost' || req.hostname === '127.0.0.1'
+  const port = isLocalhost ? `:${req.socket.localPort}` : '';
+  const expectedOrigin = `${req.protocol}://${req.hostname}${port}`
 
   const body: RegistrationResponseJSON = req.body;
 
@@ -282,7 +287,13 @@ authRouter.post('/verify-authentication', async (req, res) => {
 
   const body: AuthenticationResponseJSON = req.body;
   const rpID = req.hostname
-  const expectedOrigin = `${req.protocol}://${req.hostname}`
+
+  // Derive the base URL from the hostname and port (if localhost)
+  const isLocalhost =
+    req.hostname === 'localhost' || req.hostname === '127.0.0.1'
+  const port = isLocalhost ? `:${req.socket.localPort}` : '';
+  const expectedOrigin = `${req.protocol}://${req.hostname}${port}`
+
   const hostname = req.hostname;
 
   // Get the user object from the user manager
@@ -481,6 +492,38 @@ authRouter.post('/remove_client', async (req: Request, res: Response) => {
   }
 
   res.redirect('/')
+})
+
+/**
+ * Endpoint for deleting the current logged-in user.
+ * @route DELETE /delete-user
+ */
+authRouter.post('/delete-user', async (req: Request, res: Response) => {
+  const userManager = req.userManager
+
+  if (!userManager) {
+    return res.status(400).send({ error: 'User manager not available' })
+  }
+
+  const { accountId } = req.session.loggedInUser
+
+  // Delete the user and destroy the session
+  await userManager.deleteUserByAccountID(accountId)
+
+  // Delete the user's authenticator devices
+  const devices = await userManager.getAuthenticatorDevicesForAccountID(accountId);
+  for (const device of devices) {
+    const rawDevice = await userManager.deserializeAuthenticatorDevice(device);
+    await userManager.deleteAuthenticatorDevice(rawDevice.credentialID);
+  }
+
+  req.session.destroy(err => {
+    if (err) {
+      return res.status(500).send({ error: 'Error deleting user' })
+    }
+    // redirect to the root URL after successful deletion
+    res.redirect('/')
+  })
 })
 
 /**

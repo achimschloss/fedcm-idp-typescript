@@ -69,6 +69,16 @@
             </div>
         </div>
         <% } %>
+            <div class="w-full max-w-md px-4 py-2 bg-white rounded-lg shadow-md">
+                <div class="w-full text-center">
+                    <form action="/api/auth/delete-user" method="post">
+                        <button type="submit"
+                            class="w-full bg-red-500 hover:bg-red-600 text-white font-medium py-2 rounded-md">Delete
+                            User
+                        </button>
+                    </form>
+                </div>
+            </div>
 </body>
 
 </html>
