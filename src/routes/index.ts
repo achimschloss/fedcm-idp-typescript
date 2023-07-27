@@ -9,9 +9,9 @@ export const indexRouter = Router();
  */
 indexRouter.get('/', (req: Request, res: Response) => {
   //console.log('index - req.session.user:', req.session.user);
-  if (req.session && req.session.user) {
+  if (req.session && req.session.loggedInUser) {
     res.render('signed_in', {
-      user: req.session.user,
+      user: req.session.loggedInUser,
       clientMetaData: req.clientMetaData,
       IDPMetadata: req.IDPMetadata,
       hostname: req.hostname,

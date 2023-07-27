@@ -1,5 +1,6 @@
 // Import the User interface
 import { User } from "./user";
+import { isoUint8Array } from '@simplewebauthn/server/helpers';
 
 
 /**
@@ -55,6 +56,26 @@ export class UserManager {
     userMap.set(newUser.email, newUser);
   }
 
+   /**
+     * Retrieves a user object by credentialID and hostname.
+     * @param credentialID {Uint8Array} The credentialID of the user.
+     * @param hostname {string} The hostname associated with the user.
+     * @returns {User | undefined} The user object if found, otherwise undefined.
+     */
+   getUserByCredentialIDAndHostname(credentialID: Uint8Array, hostname: string): User | undefined {
+    const userMap = this.userMaps[hostname];
+    if (!userMap) {
+      return undefined;
+    }
+    for (const user of userMap.values()) {
+      for (const device of user.authDevice) {
+        if (isoUint8Array.areEqual(device.credentialID, credentialID)) {
+          return user;
+        }
+      }
+    }
+    return undefined;
+  }
 
   /**
    * Deletes a user object by email and hostname.

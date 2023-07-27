@@ -1,10 +1,12 @@
+import type { AuthenticatorDevice } from '@simplewebauthn/typescript-types';
 /**
  * User interface represents the structure of a user object.
  */
 export interface User {
   email: string; // The user's email address.
   name: string; // The user's name.
-  secret: string; // The user's secret.
+  secret?: string; // The user's secret (optional in case of passkey-based authentication)
+  authDevice?: AuthenticatorDevice[]; // The user's authenticator device.
   accountId: string; // The user's account ID.
   avatarUrl: string; // The user's avatar URL.
   approved_clients: string[]; // An array of approved client IDs for the user.
@@ -18,6 +20,19 @@ export interface User {
 export function addApprovedClient(user: User, clientId: string) {
   if (!user.approved_clients.includes(clientId)) {
     user.approved_clients.push(clientId);
+  }
+}
+
+/**
+ * Adds an authenticator device to the user object.
+ * @param user {User} The user object.
+ * @param device {AuthenticatorDevice} The authenticator device to be added.
+ */
+export function addAuthenticatorDevice(user: User, device: AuthenticatorDevice) {
+  if (user.authDevice) {
+    user.authDevice.push(device);
+  } else {
+    user.authDevice = [device];
   }
 }
 

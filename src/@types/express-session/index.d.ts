@@ -4,7 +4,10 @@ import "express-session";
 
 declare module 'express-session' {
   interface SessionData {
-    user?: User;
+    loggedInUser?: User;
     IDPMetadata?: IDPMetadata;
+    currentChallenge?: string;
+    passkeyRegistration?: User
+    passkeyLogin?: string
   }
 }

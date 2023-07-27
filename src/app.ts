@@ -5,6 +5,7 @@ import session from 'express-session';
 import path from 'path';
 import logger from 'morgan';
 
+// User Management
 import { UserManager } from './services/userManager';
 
 // Add routes for the index and sign-in pages

@@ -35,13 +35,13 @@ fedcmRouter.get('/client_metadata_endpoint', checkSecFetchDest, (req: Request, r
  */
 fedcmRouter.get('/accounts_endpoint', checkSecFetchDest, (req: Request, res: Response) => {
 
-  if (!req.session.user) {
+  if (!req.session.loggedInUser) {
     return res.json({
       accounts: []
     }) // Return an empty result if no user is logged in
   }
 
-  const currentUser = req.session.user
+  const currentUser = req.session.loggedInUser
 
   return res.json({
     accounts: [
@@ -63,7 +63,7 @@ fedcmRouter.get('/accounts_endpoint', checkSecFetchDest, (req: Request, res: Res
  * @route POST /token_endpoint
  */
 fedcmRouter.post('/token_endpoint', checkSecFetchDest, (req: Request, res: Response) => {
-  if (!req.session.user) {
+  if (!req.session.loggedInUser) {
     return res.json({}) // Return an empty result if no user is logged in
   }
   const {
@@ -79,7 +79,7 @@ fedcmRouter.post('/token_endpoint', checkSecFetchDest, (req: Request, res: Respo
     name,
     avatarUrl,
     accountId: account_id_session
-  } = req.session.user
+  } = req.session.loggedInUser
 
   // check if req origin matches the req.clientMetaData expected origin for this client_id
   if (!req.clientMetaData[client_id] || req.get('Origin') !== req.clientMetaData[client_id].origin) {
@@ -101,7 +101,7 @@ fedcmRouter.post('/token_endpoint', checkSecFetchDest, (req: Request, res: Respo
     // Add the client from the list of approved clients and update the session
     if (currentUser) {
       addApprovedClient(currentUser, client_id)
-      req.session.user.approved_clients = [...currentUser.approved_clients]
+      req.session.loggedInUser.approved_clients = [...currentUser.approved_clients]
     }
   }
 
