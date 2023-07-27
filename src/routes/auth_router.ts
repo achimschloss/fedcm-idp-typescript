@@ -1,7 +1,8 @@
 import bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 import { Router, Request, Response } from 'express';
-import { User, addAuthenticatorDevice, removeApprovedClient } from '../services/user';
+import { User } from '../services/user';
+import { SerializedAuthenticatorDevice } from '../services/userManager';
 const base64url = require('base64url');
 
 export const authRouter = Router();
@@ -34,9 +35,23 @@ import type {
 // Registration Options
 
 /**
- * Registration (a.k.a. "Registration")
+ * POST endpoint that generates registration options for WebAuthn registration.
+ * 
+ * Expects the following fields in the request body:
+ * - email: the email address of the user to be registered
+ * - name: the name of the user to be registered
+ * 
+ * Returns a JSON object containing the registration options for WebAuthn registration.
+ * 
+ * If the user manager is not available, or if the email or name fields are missing from the request body,
+ * returns a 400 error with an error message.
+ * 
+ * If an account with the given email already exists, returns a 409 error with an error message.
+ * 
+ * If the registration options are generated successfully, stores the new user information in the session
+ * (for the duration of the registration flow).
  */
-authRouter.post('/generate-registration-options', (req, res) => {
+authRouter.post('/generate-registration-options', async (req, res) => {
 
   const { email, name } = req.body
   const rpID = req.hostname
@@ -49,8 +64,10 @@ authRouter.post('/generate-registration-options', (req, res) => {
   if (!email || !name) {
     return res.status(400).send({ error: 'Email, name' })
   }
+
+  const existingUser = await req.userManager.getUser(email, req.hostname)
   // As of now we only support a single authenticator per user
-  if (req.userManager.getUser(email, req.hostname)) {
+  if (existingUser) {
     return res.status(409).send({ error: 'An account with this email already exists' })
   }
 
@@ -66,7 +83,15 @@ authRouter.post('/generate-registration-options', (req, res) => {
   )}.png`
 
   // Save the new user
-  const newUser: User = { email, name, accountId, avatarUrl, approved_clients: [] }
+  const newUser: User = {
+    _id: accountId,
+    email,
+    name,
+    accountId,
+    avatarUrl,
+    approved_clients: [],
+    hostname: rpID
+  }
 
   // Store user information in the session (for the duration of the registration flow)
   req.session.passkeyRegistration = newUser
@@ -98,8 +123,20 @@ authRouter.post('/generate-registration-options', (req, res) => {
   res.send(options);
 })
 
-// Verify Registration
-
+/**
+ * POST endpoint that verifies a WebAuthn registration response.
+ * 
+ * Expects the following fields in the request body:
+ * - response: the registration response object returned by the authenticator
+ * 
+ * Returns a JSON object containing a boolean indicating whether the registration was successful.
+ * 
+ * If the user manager is not available, or if the response field is missing from the request body,
+ * returns a 400 error with an error message.
+ * 
+ * If the registration response is verified successfully, stores the new authenticator device information
+ * in the user manager and logs in the user.
+ */
 authRouter.post('/verify-registration', async (req, res) => {
 
   const { email, name } = req.body
@@ -149,13 +186,15 @@ authRouter.post('/verify-registration', async (req, res) => {
       transports: body.response.transports,
     };
 
-    addAuthenticatorDevice(newUser, newDevice);
-    // finale store user in userManager
     if (!req.userManager) {
       return res.status(400).send({ error: 'User manager is not available, check app.js' })
     }
+
     // Save the new user
-    req.userManager.addUser(newUser, req.hostname)
+    req.userManager.addUser(newUser)
+
+    // Add the authenticator device to the user's list of authenticators
+    req.userManager.addAuthenticatorDevice(newUser, newDevice)
 
     // Store user information in the session
     req.session.loggedInUser = newUser
@@ -173,27 +212,42 @@ authRouter.post('/verify-registration', async (req, res) => {
 })
 
 /**
- * Login (a.k.a. "Authentication")
+ * Endpoint for generating authentication options for WebAuthn authentication.
+ * POST /generate-authentication-options
+ * Expects the following fields in the request body:
+ * - email: the email address of the user to be authenticated (optional)
+ * 
+ * Returns a JSON object containing the authentication options for WebAuthn authentication.
+ * 
+ * If the user manager is not available, or if the email field is missing from the request body,
+ * returns a 400 error with an error message.
+ * 
+ * If the authentication options are generated successfully, stores the current challenge and user information
+ * in the session (for the duration of the authentication flow).
  */
-authRouter.post('/generate-authentication-options', (req, res) => {
+
+authRouter.post('/generate-authentication-options', async (req, res) => {
   const { email } = req.body
   const rpID = req.hostname
-
-  const user = req.userManager.getUser(email, req.hostname)
 
   const opts: GenerateAuthenticationOptionsOpts = {
     timeout: 60000,
     userVerification: 'required',
+    // This is always the IDPs hostname
     rpID,
   };
 
-  // In case user is known, add the authenticator devices to the options
-  if (user) {
-    opts.allowCredentials = user.authDevice.map(dev => ({
-      id: dev.credentialID,
-      type: 'public-key',
-      transports: dev.transports,
-    }));
+  if (email) {
+    const user = await req.userManager.getUser(email, req.hostname)
+    if (user) {
+      // In case user is known, add the authenticator devices to the options
+      const devices = await req.userManager.getAuthenticatorDevicesForAccountID(user.accountId);
+      opts.allowCredentials = devices.map((device) => ({
+        id: base64url.toBuffer(device.credentialID),
+        type: 'public-key',
+        transports: device.transports,
+      }));
+    }
   }
 
   const options = generateAuthenticationOptions(opts);
@@ -211,6 +265,19 @@ authRouter.post('/generate-authentication-options', (req, res) => {
   res.send(options);
 });
 
+
+/**
+ * Endpoint for verifying the authentication response from the client.
+ * @route POST /verify-authentication
+ * Expects the following fields in the request body:
+ * - rawId: the raw ID of the authenticator device
+ * - response: the response object from the authenticator device
+ * 
+ * Returns a JSON object containing a boolean indicating whether the authentication was verified or not.
+ * 
+ * If the user manager is not available, or if the expected challenge or authenticator device is missing from the session, returns a 400 error with an error message.
+ * 
+ */
 authRouter.post('/verify-authentication', async (req, res) => {
 
   const body: AuthenticationResponseJSON = req.body;
@@ -219,7 +286,7 @@ authRouter.post('/verify-authentication', async (req, res) => {
   const hostname = req.hostname;
 
   // Get the user object from the user manager
-  let user = req.userManager.getUser(req.session.passkeyLogin, hostname)
+  let user = await req.userManager.getUser(req.session.passkeyLogin, hostname)
   const expectedChallenge = req.session.currentChallenge;
 
   // This should not happen, but cancel in case of an unexpected condition
@@ -232,43 +299,44 @@ authRouter.post('/verify-authentication', async (req, res) => {
     return res.status(400).send({ error: 'User or challenge is missing' });
   }
 
-  let existingDevice: AuthenticatorDevice | undefined;
+  let matchingDevice: SerializedAuthenticatorDevice | undefined;
+  let existingDevices: SerializedAuthenticatorDevice[] = [];
+
+  // Convert the raw ID to a Uint8Array to compare with existing device's credentialID
   const bodyCredIDUint8Array = new Uint8Array(base64url.toBuffer(body.rawId));
+
+  // In case the user is known, find the matching device
   if (user) {
-    // Search for the authenticator device within the user's devices
-    for (const dev of user.authDevice) {
-      const devCredentialID: Uint8Array = new Uint8Array(dev.credentialID);
-      if (isoUint8Array.areEqual(bodyCredIDUint8Array, devCredentialID)) {
-        existingDevice = dev;
+    existingDevices = await req.userManager.getAuthenticatorDevicesForAccountID(user.accountId)
+    for (const device of existingDevices) {
+      const Uint8ArrayCredentialID = base64url.toBuffer(device.credentialID)
+      if (isoUint8Array.areEqual(Uint8ArrayCredentialID, bodyCredIDUint8Array)) {
+        matchingDevice = device;
         break;
       }
     }
+    // Conditional UI
+    // TODO check if we can provide the username here too to avoid searching the user based on device
   } else {
-    // Search for the authenticator device within all users
-    user = req.userManager.getUserByCredentialIDAndHostname(bodyCredIDUint8Array, hostname);
-    if (user) {
-      for (const dev of user.authDevice) {
-        const devCredentialID: Uint8Array = new Uint8Array(dev.credentialID);
-        if (isoUint8Array.areEqual(bodyCredIDUint8Array, devCredentialID)) {
-          existingDevice = dev;
-          break;
-        }
-      }
-    }
+    // credentialID is the _id of the device, if use is found and device is found, we can use the device
+    user = await req.userManager.getUserByCredentialIDAndHostname(bodyCredIDUint8Array, hostname)
+    matchingDevice = await req.userManager.getAuthenticatorDevice(bodyCredIDUint8Array)
   }
 
-  if (!existingDevice) {
+  if (!matchingDevice) {
     return res.status(400).send({ error: 'Unkown Authenticator' });
   }
 
   let verification: VerifiedAuthenticationResponse;
+  const deserializedMatchingDevice = await req.userManager.deserializeAuthenticatorDevice(matchingDevice);
   try {
     const opts: VerifyAuthenticationResponseOpts = {
       response: body,
       expectedChallenge: `${expectedChallenge}`,
       expectedOrigin,
       expectedRPID: rpID,
-      authenticator: existingDevice,
+      // for now we only allow 1 device per user
+      authenticator: deserializedMatchingDevice,
       requireUserVerification: true,
     };
     verification = await verifyAuthenticationResponse(opts);
@@ -282,7 +350,8 @@ authRouter.post('/verify-authentication', async (req, res) => {
 
   if (verified) {
     // Update the authenticator's counter in the DB to the newest count in the authentication
-    existingDevice.counter = authenticationInfo.newCounter;
+    matchingDevice.counter = authenticationInfo.newCounter;
+    req.userManager.updateAuthDevice(matchingDevice)
   }
 
   // Store user information in the session
@@ -298,11 +367,13 @@ authRouter.post('/verify-authentication', async (req, res) => {
   res.send({ verified });
 })
 
+
+
 /**
  * User sign-up endpoint.
  * @route POST /signup
  */
-authRouter.post('/signup', (req: Request, res: Response) => {
+authRouter.post('/signup', async (req: Request, res: Response) => {
 
   const { email, name, secret } = req.body
 
@@ -314,7 +385,8 @@ authRouter.post('/signup', (req: Request, res: Response) => {
     return res.status(400).send({ error: 'Email, name, and secret are required' })
   }
 
-  if (req.userManager.getUser(email, req.hostname)) {
+  const existingUser = await req.userManager.getUser(email, req.hostname)
+  if (existingUser) {
     return res.status(409).send({ error: 'An account with this email already exists' })
   }
 
@@ -330,8 +402,17 @@ authRouter.post('/signup', (req: Request, res: Response) => {
   )}.png`
 
   // Save the new user
-  const newUser: User = { email, secret, name, accountId, avatarUrl, approved_clients: [] }
-  req.userManager.addUser(newUser, req.hostname)
+  const newUser: User = {
+    _id: accountId,
+    email,
+    secret,
+    name,
+    accountId,
+    avatarUrl,
+    approved_clients: [],
+    hostname: req.hostname
+  }
+  req.userManager.addUser(newUser)
 
   // Store user information in the session
   req.session.loggedInUser = newUser
@@ -344,18 +425,20 @@ authRouter.post('/signup', (req: Request, res: Response) => {
   res.redirect('/')
 })
 
+
+
 /**
  * User sign-in endpoint.
  * @route POST /signin
  */
-authRouter.post('/signin', (req: Request, res: Response) => {
+authRouter.post('/signin', async (req: Request, res: Response) => {
   const { email, secret } = req.body
 
   if (!email || !secret) {
     return res.status(400).send({ error: 'Email and password are required' })
   }
 
-  const user = req.userManager.getUser(email, req.hostname)
+  const user = await req.userManager.getUser(email, req.hostname)
 
   if (!user || user.secret !== secret) {
     return res.status(401).send({ error: 'Invalid email or password' })
@@ -372,22 +455,28 @@ authRouter.post('/signin', (req: Request, res: Response) => {
   res.redirect('/')
 })
 
+
+
 /**
  * Endpoint for removing a client from the user's list of approved clients.
  * @route POST /remove_client
  */
-authRouter.post('/remove_client', (req: Request, res: Response) => {
+authRouter.post('/remove_client', async (req: Request, res: Response) => {
   const { client_id } = req.body
-  if (!req.userManager) {
+  const userManager = req.userManager
+
+  if (!userManager) {
     return res.redirect('/')
   }
 
-  const { email } = req.session.loggedInUser
-  const currentUser = req.userManager.getUser(email, req.hostname)
+  const { accountId } = req.session.loggedInUser
+
+  //fetch user with known accountID to update approved_clients
+  const currentUser = await userManager.getUserByAccountID(accountId)
 
   // Remove the client from the list of approved clients and update the session
   if (currentUser) {
-    removeApprovedClient(currentUser, client_id)
+    await userManager.removeApprovedClient(currentUser, client_id)
     req.session.loggedInUser.approved_clients = [...currentUser.approved_clients]
   }
 

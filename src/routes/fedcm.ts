@@ -1,6 +1,5 @@
 import jwt from 'jsonwebtoken';
 import { Router, Request, Response } from 'express';
-import { addApprovedClient } from '../services/user';
 import { checkSecFetchDest } from '../services/util';
 
 export const fedcmRouter = Router();
@@ -62,7 +61,7 @@ fedcmRouter.get('/accounts_endpoint', checkSecFetchDest, (req: Request, res: Res
  * @see https://fedidcg.github.io/FedCM/#idp-api-id-assertion-endpoint
  * @route POST /token_endpoint
  */
-fedcmRouter.post('/token_endpoint', checkSecFetchDest, (req: Request, res: Response) => {
+fedcmRouter.post('/token_endpoint', checkSecFetchDest, async (req: Request, res: Response) => {
   if (!req.session.loggedInUser) {
     return res.json({}) // Return an empty result if no user is logged in
   }
@@ -96,11 +95,13 @@ fedcmRouter.post('/token_endpoint', checkSecFetchDest, (req: Request, res: Respo
 
   if (disclosure_text_shown) {
     const userManager = req.userManager
-    const currentUser = userManager.getUser(email, req.hostname)
+
+    //fetch user with known accountID to update approved_clients
+    const currentUser = await userManager.getUserByAccountID(account_id_session)
 
     // Add the client from the list of approved clients and update the session
     if (currentUser) {
-      addApprovedClient(currentUser, client_id)
+      await userManager.addApprovedClient(currentUser, client_id)
       req.session.loggedInUser.approved_clients = [...currentUser.approved_clients]
     }
   }
