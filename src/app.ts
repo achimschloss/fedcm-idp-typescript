@@ -46,6 +46,7 @@ app.use(express.urlencoded({ extended: false }))
 
 app.use(
   session({
+    name: 'fedcm-idp-session:',
     secret: 'mysecret', // replace with your own secret
     resave: false,
     saveUninitialized: false,
