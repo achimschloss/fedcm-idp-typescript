@@ -11,8 +11,12 @@ export const metaDataRouter = Router();
  */
 metaDataRouter.get('/.well-known/web-identity', checkSecFetchDest, (req: Request, res: Response) => {
     const hostname = req.hostname;
+    const isLocalhost =
+        req.hostname === 'localhost' || req.hostname === '127.0.0.1'
+    const port = isLocalhost ? `:${req.socket.localPort}` : ''
+    const baseUrl = `${req.protocol}://${req.hostname}${port}`
     if (req.supportedIDPOrigins.includes(hostname)) {
-        res.json({ provider_urls: [`https://${req.hostname}/fedcm.json`] });
+        res.json({ provider_urls: [`${baseUrl}/fedcm.json`] });
     } else {
         res.send('hello from other domains');
     }

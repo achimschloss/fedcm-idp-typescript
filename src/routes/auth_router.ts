@@ -146,7 +146,7 @@ authRouter.post('/verify-registration', async (req, res) => {
   // Derive the base URL from the hostname and port (if localhost)
   const isLocalhost =
     req.hostname === 'localhost' || req.hostname === '127.0.0.1'
-  const port = isLocalhost ? `:${req.socket.localPort}` : '';
+  const port = isLocalhost && req.socket.localPort !== 80 ? `:${req.socket.localPort}` : '';
   const expectedOrigin = `${req.protocol}://${req.hostname}${port}`
 
   const body: RegistrationResponseJSON = req.body;
@@ -291,7 +291,7 @@ authRouter.post('/verify-authentication', async (req, res) => {
   // Derive the base URL from the hostname and port (if localhost)
   const isLocalhost =
     req.hostname === 'localhost' || req.hostname === '127.0.0.1'
-  const port = isLocalhost ? `:${req.socket.localPort}` : '';
+  const port = isLocalhost && req.socket.localPort !== 80 ? `:${req.socket.localPort}` : '';
   const expectedOrigin = `${req.protocol}://${req.hostname}${port}`
 
   const hostname = req.hostname;
