@@ -29,11 +29,11 @@ To get started:
    npm run start-local
    ```
 
-Note that as of now running on localhost will only allow you to play around with the base IDP functionality given the FedCM-APIs cannot be called in a non secure context.
+**Note:** It is not supported as of now to run multiple IDPs on different localhost ports. The FedCM APIs can be tested using an RP that runs on a different port on localhost.
 
 ## Deployment options
 
-This setup currently supports three deployment options. It can be run on localhost, deployed using dedicated domains (default) and via Heroku (deployed on localhost, Heroku takes care of the rest)
+This setup currently supports three deployment options. It can be run on localhost, deployed using dedicated domains (default, supporting multiple IDPs) and via Heroku (deployed on localhost, Heroku takes care of the rest)
 
 ### Default deployment
 
@@ -54,7 +54,7 @@ Start server using.
 npm start-local
 ```
 
-This will not enable you to test the FedCM APIs, see note above
+The IDP will be available on `localhost:8080`, w.r.t to configuring FedCM call on the RP side use `configURL: http://localhost:8080/fedcm.json`
 
 ### Heroku
 
@@ -117,7 +117,9 @@ IDP configuration is contained in `config/idp_metadata.json`. In order to host a
 IDP User management:
 
 - Create account
+- Delete account
 - Sign-in / Sign-out
+- Account persistence in PouchDB
 - Profile Page (show user info)
 - passkey support (single authenticator per user, passwordless login)
 - Approved Clients Management (display, revoke)

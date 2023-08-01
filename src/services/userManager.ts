@@ -28,10 +28,9 @@ export class UserManager {
   private deviceDB: PouchDB.Database<SerializedAuthenticatorDevice>;
 
   /**
-   * Creates a new UserManager instance and initializes user maps for each hostname.
-   * @param hostnames {string[]} An array of hostnames.
+   * Creates a new UserManager instance and initializes the PouchDB persistence.
    */
-  constructor(hostnames: string[]) {
+  constructor() {
     PouchDB.plugin(find);
     this.userDB = new PouchDB<User>('users');
     this.deviceDB = new PouchDB<SerializedAuthenticatorDevice>('devices');

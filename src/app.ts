@@ -60,10 +60,10 @@ app.use(
 // Define a constant for the supported hostnames
 const supportedIDPOrigins = Object.keys(SupportedIDPMetadata)
 
-// Create a in-memory User Manager (keyed by hostname) initialized per hostname automatically
-const userManager = new UserManager(supportedIDPOrigins)
+// Create a User Manager (Account managed per hostname)
+const userManager = new UserManager()
 
-// Use middleware to set the correct user map based on the hostname and the client metadata
+// Use middleware to inject IDP Metadata, Client Metadata and UserManger into the req object
 app.use((req: Request, res: Response, next: NextFunction) => {
   const hostname = req.hostname
   console.log('hostname', hostname)
@@ -87,6 +87,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
   // Add IDPMetadata to the req object for routers to use
   // replace {baseUrl} with the actual base URL to use (based on hostname)
+  // TODO: this should only be done once
   req.IDPMetadata = JSON.parse(
     JSON.stringify(metadata).replace('{baseUrl}', baseUrl)
   );

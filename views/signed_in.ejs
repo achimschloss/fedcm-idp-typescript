@@ -36,19 +36,22 @@
         <% if (user.approved_clients && user.approved_clients.length> 0) { %>
             <div class="mb-4">
                 <h1 class="text-lg font-semibold mb-2">Approved Clients</h1>
-                <ul class="list-disc list-inside text-sm">
-                    <% user.approved_clients.forEach(client_id=> { %>
-                        <li class="mb-2 flex justify-between">
-                            <%= clientMetaData[client_id].name || client_id %>
-
-                                <!-- Add this form to delete the client -->
-                                <form action="/api/auth/remove_client" method="post">
-                                    <input type="hidden" name="client_id" value="<%= client_id %>">
-                                    <button type="submit" class="text-red-500">Delete</button>
-                                </form>
-                        </li>
-                        <% }) %>
-                </ul>
+                <% if (clientMetaData) { %>
+                    <ul class="list-disc list-inside text-sm">
+                        <% user.approved_clients.forEach(client_id=> { %>
+                            <% if (clientMetaData[client_id]) { %>
+                                <li class="mb-2 flex justify-between">
+                                    <%= clientMetaData[client_id].name || client_id %>
+                                        <!-- Add this form to delete the client -->
+                                        <form action="/api/auth/remove_client" method="post">
+                                            <input type="hidden" name="client_id" value="<%= client_id %>">
+                                            <button type="submit" class="text-red-500">Delete</button>
+                                        </form>
+                                </li>
+                                <% } %>
+                                    <% }) %>
+                    </ul>
+                    <% } %>
             </div>
             <% } %>
 

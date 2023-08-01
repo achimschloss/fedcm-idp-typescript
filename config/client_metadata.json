@@ -1,6 +1,6 @@
 {
   "yourClientID": {
     "name": "Sample Client 1",
-    "origin": "https://yourrelyingparty.com"
+    "origin": "http://localhost:7080"
   }
 }
