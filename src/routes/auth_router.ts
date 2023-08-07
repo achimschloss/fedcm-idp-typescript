@@ -104,13 +104,18 @@ authRouter.post('/generate-registration-options', async (req, res) => {
     // Don't prompt users for additional information about the authenticator
     // (Recommended for smoother UX)
     attestationType: 'none',
-    // Prevent users from re-registering existing authenticators
+    // Prevent users from re-registering existing authenticators 
+    // As we only support one authenticator per user, this is not needed
     //excludeCredentials: userAuthenticators.map(authenticator => ({
     //  id: authenticator.credentialID,
     //  type: 'public-key',
     //  // Optional
     //  transports: authenticator.transports,
     //})),
+    // Only allow plattform authenticators for simplicity
+    authenticatorSelection: {
+      authenticatorAttachment: 'platform'
+    },
     supportedAlgorithmIDs: [-7, -257],
   });
 
@@ -208,7 +213,7 @@ authRouter.post('/verify-registration', async (req, res) => {
     res.set('IdP-SignIn-Status', 'action=signin');
   }
 
-  //reset passkey states
+  // Cleanup registration states
   req.session.currentChallenge = undefined;
   req.session.passkeyRegistration = undefined;
 
@@ -287,6 +292,7 @@ authRouter.post('/verify-authentication', async (req, res) => {
 
   const body: AuthenticationResponseJSON = req.body;
   const rpID = req.hostname
+  const hostname = req.hostname;
 
   // Derive the base URL from the hostname and port (if localhost)
   const isLocalhost =
@@ -294,10 +300,19 @@ authRouter.post('/verify-authentication', async (req, res) => {
   const port = isLocalhost && req.socket.localPort !== 80 ? `:${req.socket.localPort}` : '';
   const expectedOrigin = `${req.protocol}://${req.hostname}${port}`
 
-  const hostname = req.hostname;
+  let user: User | undefined;
 
   // Get the user object from the user manager
-  let user = await req.userManager.getUser(req.session.passkeyLogin, hostname)
+
+  // If expected user is known, fetch the user from the user manager
+  if (req.session.passkeyLogin) {
+    user = await req.userManager.getUser(req.session.passkeyLogin, hostname)
+  }
+  // If expected user is not known, fetch the user from the user manager based on the accountID
+  else {
+    user = await req.userManager.getUserByAccountID(body.response.userHandle);
+  }
+
   const expectedChallenge = req.session.currentChallenge;
 
   // This should not happen, but cancel in case of an unexpected condition
@@ -313,31 +328,36 @@ authRouter.post('/verify-authentication', async (req, res) => {
   let matchingDevice: SerializedAuthenticatorDevice | undefined;
   let existingDevices: SerializedAuthenticatorDevice[] = [];
 
-  // Convert the raw ID to a Uint8Array to compare with existing device's credentialID
-  const bodyCredIDUint8Array = new Uint8Array(base64url.toBuffer(body.rawId));
-
-  // In case the user is known, find the matching device
+  // Confirm that authenticator is registered to the user
   if (user) {
+    // Convert the raw ID to a Uint8Array to compare with existing device's credentialID
+    const authResponseCredentialD = new Uint8Array(base64url.toBuffer(body.rawId));
     existingDevices = await req.userManager.getAuthenticatorDevicesForAccountID(user.accountId)
     for (const device of existingDevices) {
-      const Uint8ArrayCredentialID = base64url.toBuffer(device.credentialID)
-      if (isoUint8Array.areEqual(Uint8ArrayCredentialID, bodyCredIDUint8Array)) {
+      // Convert the serialized device credentialID to a Uint8Array to compare the response's credentialID
+      const deviceCredentialID = base64url.toBuffer(device.credentialID)
+      if (isoUint8Array.areEqual(deviceCredentialID, authResponseCredentialD)) {
         matchingDevice = device;
         break;
       }
     }
-    // Conditional UI
-    // TODO check if we can provide the username here too to avoid searching the user based on device
-  } else {
-    // credentialID is the _id of the device, if use is found and device is found, we can use the device
-    user = await req.userManager.getUserByCredentialIDAndHostname(bodyCredIDUint8Array, hostname)
-    matchingDevice = await req.userManager.getAuthenticatorDevice(bodyCredIDUint8Array)
   }
 
+  // If we were unable find a user based on the email or accountID (for the given authenticator), return an error  
+  else {
+    req.session.passkeyLogin = undefined;
+    req.session.currentChallenge = undefined;
+    return res.status(400).send({ error: 'Unknown User or Authenticator' });
+  }
+
+  // If we were unable find a matching authenticator for a given user return an error  
   if (!matchingDevice) {
-    return res.status(400).send({ error: 'Unkown Authenticator' });
+    req.session.passkeyLogin = undefined;
+    req.session.currentChallenge = undefined;
+    return res.status(400).send({ error: 'Unknown User or Authenticator' });
   }
 
+  // Verify the authentication response based on the given authenticator and response
   let verification: VerifiedAuthenticationResponse;
   const deserializedMatchingDevice = await req.userManager.deserializeAuthenticatorDevice(matchingDevice);
   try {
@@ -371,8 +391,8 @@ authRouter.post('/verify-authentication', async (req, res) => {
   // Set FedCM Sign-In status via header
   res.set('IdP-SignIn-Status', 'action=signin');
 
-  // Cleanup
-  req.session.passkeyRegistration = undefined;
+  // Cleanup authentication states
+  req.session.passkeyLogin = undefined;
   req.session.currentChallenge = undefined;
 
   res.send({ verified });
