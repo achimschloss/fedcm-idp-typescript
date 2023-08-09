@@ -11,10 +11,12 @@ export const metaDataRouter = Router();
  */
 metaDataRouter.get('/.well-known/web-identity', checkSecFetchDest, (req: Request, res: Response) => {
     const hostname = req.hostname;
-    const isLocalhost =
-        req.hostname === 'localhost' || req.hostname === '127.0.0.1'
-    const port = isLocalhost ? `:${req.socket.localPort}` : ''
-    const baseUrl = `${req.protocol}://${req.hostname}${port}`
+
+    // Determine origin based on the host (hostname incl. port) and scheme
+    // Note this is only needed to support multiple IDPs in parallel (otherwise could be set from the config file)
+    const host = req.get('host');
+    const baseUrl = `${req.protocol}://${host}`;
+
     if (req.supportedIDPOrigins.includes(hostname)) {
         res.json({ provider_urls: [`${baseUrl}/fedcm.json`] });
     } else {
@@ -29,8 +31,22 @@ metaDataRouter.get('/.well-known/web-identity', checkSecFetchDest, (req: Request
  * @route GET /fedcm.json
  */
 metaDataRouter.get('/fedcm.json', checkSecFetchDest, (req: Request, res: Response) => {
+
+    // Endpoints are relative and always the same
+    const endpoints = {
+        "accounts_endpoint": "/fedcm/accounts_endpoint",
+        "client_metadata_endpoint": "/fedcm/client_metadata_endpoint",
+        "id_assertion_endpoint": "/fedcm/token_endpoint",
+        "revocation_endpoint": "/fedcm/revocation_endpoint",
+        "signin_url": "/"
+    };
+
+    // Merge endpoints with branding and return result
     if (req.IDPMetadata) {
-        res.json(req.IDPMetadata);
+        res.json({
+            ...endpoints,
+            branding: req.IDPMetadata.branding
+        });
     } else {
         res.status(404).send('Configuration not found - please check app.js');
     }

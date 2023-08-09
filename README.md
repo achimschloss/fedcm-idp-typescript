@@ -29,15 +29,15 @@ To get started:
    npm run start-local
    ```
 
-**Note:** It is not supported as of now to run multiple IDPs on different localhost ports. The FedCM APIs can be tested using an RP that runs on a different port on localhost.
+**Note:** It is not supported to run multiple IDPs on different localhost ports or different ports on the same hostname (i.e. `localhost:8080` and `localhost:8081`).
 
 ## Deployment options
 
-This setup currently supports three deployment options. It can be run on localhost, deployed using dedicated domains (default, supporting multiple IDPs) and via Heroku (deployed on localhost, Heroku takes care of the rest)
+This setup currently supports three deployment options. It can be run on locally, deployed using dedicated domains (default) and via Heroku (deployed on localhost, Heroku takes care of the rest)
 
 ### Default deployment
 
-The default deployment assumes that the setup is using dedicated eTLD+1s to run IDPs.
+The default deployment assumes that the setup is using dedicated etlD+1s to run IDPs.
 This setup currently supports running any number of IDP - supported IDP hostnames will be fetched from the `idp_metadata.json` configuration file and started automatically accordingly.
 
 Start the server once the domains are set using
@@ -46,7 +46,11 @@ Start the server once the domains are set using
 npm start
 ```
 
-### Localhost
+The IDPs will be available on the given hostnames via **https**.
+
+### Local deployment
+
+#### Single IDP
 
 Start server using.
 
@@ -54,7 +58,23 @@ Start server using.
 npm start-local
 ```
 
-The IDP will be available on `localhost:8080`, w.r.t to configuring FedCM call on the RP side use `configURL: http://localhost:8080/fedcm.json`
+The IDP will be available on `localhost:8080` via **http**, w.r.t to configuring the FedCM Browser API call on the RP side use `configURL: http://localhost:8080/fedcm.json`
+
+#### Multiple IDPs
+
+This setup currently supports running any number of IDP locally - supported IDP hostnames will be fetched from the `idp_metadata.json` configuration file and started automatically accordingly.
+
+In order to run multiple IDPs locally use multiple `.localhost` hostnames, e.g. `idp-1.localhost`, `idp-2.localhost`, etc. and add them to the `idp_metadata.json` configuration file.
+
+**Note:** This of course requires you to add the respective hostnames to your `/etc/hosts` file to point to 127.0.0.1
+
+Start the server once the domains are set using
+
+```shell
+npm start-local
+```
+
+The IDPs will be available on the given hostnames via **http** on port 8080, w.r.t to configuring the FedCM Browser API call on the RP side use `configURL: http://idp-1.localhost:8080/fedcm.json` and so on.
 
 ### Heroku
 
@@ -62,7 +82,7 @@ This setup can be deployed via Heroku PaaS - Follow the respective instructions 
 
 ## Certificate configuration
 
-The setup expects a `certs` subdirectory in the root of the project containing a subdirectory for the configured domains. Basic setup:
+In case not run locally or via Heroku this setup expects a `certs` subdirectory in the root of the project containing a subdirectory for the configured domains. Basic setup:
 
 Create the certs directory
 
@@ -88,15 +108,10 @@ Supported Clients must be configured in `config/client_metadata.json`. Note that
 
 ### IDPs
 
-IDP configuration is contained in `config/idp_metadata.json`. In order to host an IDP on a domain other than localhost, add a respective entry to the JSON configuration object (may contain multiple). The branding configuration can be adjusted to your needs. **Do not change the endpoint configuration**
+IDP configuration is contained in `config/idp_metadata.json`. In order to host an IDP on a etlD+1 / other than localhost (configured by default for local deployment), add a respective entry to the JSON configuration object (may contain multiple). The branding configuration can be adjusted to your needs per IDP.
 
 ```json
     "your-domain-goes-here": {
-        "accounts_endpoint": "/fedcm/accounts_endpoint",
-        "client_metadata_endpoint": "/fedcm/client_metadata_endpoint",
-        "id_assertion_endpoint": "/fedcm/token_endpoint",
-        "revocation_endpoint": "/fedcm/revocation_endpoint",
-        "signin_url": "/",
         "branding": {
             "background_color": "rgb(255, 255, 204)",
             "color": "0xffffff",
