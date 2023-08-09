@@ -161,7 +161,11 @@ fedcmRouter.post('/token_endpoint', checkSecFetchDest, async (req: Request, res:
  * @route GET /embedded
  */
 fedcmRouter.get('/embedded', (req, res) => {
-  const hostname = req.hostname;
+
+  const hostname = req.hostname
+  const fullHost = req.get('host')
+  const originWithScheme = `${req.protocol}://${fullHost}`
+
   const client_id = req.query.clientId as string;
   const iFrame_referer = req.get('Referer')?.replace(/\/$/, '') as string;
 
@@ -172,7 +176,7 @@ fedcmRouter.get('/embedded', (req, res) => {
 
   if (req.supportedIDPOrigins.includes(hostname)) {
 
-    const configURL = `https://${req.hostname}/fedcm.json`;
+    const configURL = `${originWithScheme}/fedcm.json`;
     const user_info = {}
     const idp_logo = req.IDPMetadata.branding.icons[0].url;
 
