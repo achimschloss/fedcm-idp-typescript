@@ -163,8 +163,11 @@ fedcmRouter.post('/token_endpoint', checkSecFetchDest, async (req: Request, res:
 fedcmRouter.get('/embedded', (req, res) => {
 
   const hostname = req.hostname
-  const fullHost = req.get('host')
-  const originWithScheme = `${req.protocol}://${fullHost}`
+
+  // Derive the base URL from the host (hostname incl. port) and scheme
+  // Note this is only needed to support multiple IDPs in parallel
+  const host = req.get('host');
+  const origin = `${req.protocol}://${host}`;
 
   const client_id = req.query.clientId as string;
   const iFrame_referer = req.get('Referer')?.replace(/\/$/, '') as string;
@@ -176,7 +179,7 @@ fedcmRouter.get('/embedded', (req, res) => {
 
   if (req.supportedIDPOrigins.includes(hostname)) {
 
-    const configURL = `${originWithScheme}/fedcm.json`;
+    const configURL = `${origin}/fedcm.json`;
     const user_info = {}
     const idp_logo = req.IDPMetadata.branding.icons[0].url;
 

@@ -68,11 +68,10 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   const hostname = req.hostname
   console.log('hostname', hostname)
 
-  // Derive the base URL from the hostname and port (if localhost)
-  const isLocalhost =
-    req.hostname === 'localhost' || req.hostname === '127.0.0.1'
-  const port = isLocalhost ? `:${req.socket.localPort}` : ''
-  const baseUrl = `${req.protocol}://${req.hostname}${port}`
+  // Determine origin based on the host (hostname incl. port) and scheme
+  // Note this is only needed to support multiple IDPs in parallel (otherwise could be set from the config file)
+  const host = req.get('host');
+  const baseUrl = `${req.protocol}://${host}`;
 
   const metadata = (SupportedIDPMetadata as IDPMetadataConfig)[hostname];
 

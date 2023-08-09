@@ -148,11 +148,10 @@ authRouter.post('/verify-registration', async (req, res) => {
   const rpID = req.hostname
   const rpName = "TestIDP - " + req.hostname
 
-  // Derive the base URL from the hostname and port (if localhost)
-  const isLocalhost =
-    req.hostname === 'localhost' || req.hostname === '127.0.0.1'
-  const port = isLocalhost && req.socket.localPort !== 80 ? `:${req.socket.localPort}` : '';
-  const expectedOrigin = `${req.protocol}://${req.hostname}${port}`
+  // Derive the base URL from the host (hostname incl. port) and scheme
+  // Note this is only needed to support multiple IDPs in parallel
+  const host = req.get('host');
+  const expectedOrigin = `${req.protocol}://${host}`;
 
   const body: RegistrationResponseJSON = req.body;
 
@@ -294,11 +293,10 @@ authRouter.post('/verify-authentication', async (req, res) => {
   const rpID = req.hostname
   const hostname = req.hostname;
 
-  // Derive the base URL from the hostname and port (if localhost)
-  const isLocalhost =
-    req.hostname === 'localhost' || req.hostname === '127.0.0.1'
-  const port = isLocalhost && req.socket.localPort !== 80 ? `:${req.socket.localPort}` : '';
-  const expectedOrigin = `${req.protocol}://${req.hostname}${port}`
+  // Derive the base URL from the host (hostname incl. port) and scheme
+  // Note this is only needed to support multiple IDPs in parallel
+  const host = req.get('host');
+  const expectedOrigin = `${req.protocol}://${host}`;
 
   let user: User | undefined;
 
