@@ -7,6 +7,9 @@ const base64url = require('base64url');
 
 export const authRouter = Router();
 
+// Set the expiration time for the login session to 5 minutes
+const EXPIRATION_OFFSET = 5 * 60 * 1000; // 5 minutes
+
 import {
   // Registration
   generateRegistrationOptions,
@@ -208,6 +211,10 @@ authRouter.post('/verify-registration', async (req, res) => {
     // Store user information in the session
     req.session.loggedInUser = newUser
 
+    // Set the expiration time for the login session
+    const expiration = Date.now() + EXPIRATION_OFFSET;
+    req.session.loginSessionExpiration = expiration;
+
     // Set FedCM Sign-In status via header
     res.set('IdP-SignIn-Status', 'action=signin');
   }
@@ -386,6 +393,10 @@ authRouter.post('/verify-authentication', async (req, res) => {
   // Store user information in the session
   req.session.loggedInUser = user
 
+  // Set the expiration time for the login session
+  const expiration = Date.now() + EXPIRATION_OFFSET;
+  req.session.loginSessionExpiration = expiration;
+
   // Set FedCM Sign-In status via header
   res.set('IdP-SignIn-Status', 'action=signin');
 
@@ -446,6 +457,10 @@ authRouter.post('/signup', async (req: Request, res: Response) => {
   // Store user information in the session
   req.session.loggedInUser = newUser
 
+  // Set the expiration time for the login session
+  const expiration = Date.now() + EXPIRATION_OFFSET;
+  req.session.loginSessionExpiration = expiration;
+
   // Set FedCM Sign-In status via header
   res.set('IdP-SignIn-Status', 'action=signin');
 
@@ -476,6 +491,10 @@ authRouter.post('/signin', async (req: Request, res: Response) => {
   // Store user information and secret in the session
   req.session.loggedInUser = user
 
+  // Set the expiration time for the login session
+  const expiration = Date.now() + EXPIRATION_OFFSET;
+  req.session.loginSessionExpiration = expiration;
+
   // Set FedCM Sign-In status via header
   res.set('IdP-SignIn-Status', 'action=signin');
 
@@ -495,7 +514,7 @@ authRouter.post('/remove_client', async (req: Request, res: Response) => {
   const userManager = req.userManager
 
   if (!userManager) {
-    return res.redirect('/')
+    return res.status(400).send({ message: 'User manager not found' })
   }
 
   const { accountId } = req.session.loggedInUser
@@ -508,8 +527,22 @@ authRouter.post('/remove_client', async (req: Request, res: Response) => {
     await userManager.removeApprovedClient(currentUser, client_id)
     req.session.loggedInUser.approved_clients = [...currentUser.approved_clients]
   }
-
   res.redirect('/')
+})
+
+/**
+ * Endpoint for expiring a session without signalling to the browser
+ * @route POST /expire-session-outofband
+ */
+authRouter.post('/expire-session-outofband', async (req: Request, res: Response) => {
+
+  if (req.session.loggedInUser) {
+    req.session.loginSessionExpiration = undefined
+    res.status(200).send({ message: 'Session expired successfully' })
+  } else {
+    res.status(400).send({ message: 'No current session' })
+  }
+
 })
 
 /**
@@ -519,7 +552,7 @@ authRouter.post('/remove_client', async (req: Request, res: Response) => {
 authRouter.post('/delete-user', async (req: Request, res: Response) => {
   const userManager = req.userManager
 
-  if (!userManager) {
+  if (!userManager || !req.session.loggedInUser) {
     return res.status(400).send({ error: 'User manager not available' })
   }
 

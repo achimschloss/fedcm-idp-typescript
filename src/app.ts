@@ -84,14 +84,20 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   // Add supportedIDPOrigins to the req object
   req.supportedIDPOrigins = supportedIDPOrigins
 
+  // cleanup the login status related parts of the session if it has expired
+  if (req.session.loggedInUser && req.session.loginSessionExpiration < Date.now()) {
+    req.session.loginSessionExpiration = undefined
+    req.session.loggedInUser = undefined
+  }
+
   // Add IDPMetadata to the req object for routers to use
   // replace {baseUrl} with the actual base URL to use (based on hostname)
   // TODO: this should only be done once
   req.IDPMetadata = JSON.parse(
-    JSON.stringify(metadata).replace('{baseUrl}', baseUrl)
-  );
-  //console.log('req.IDPMetadata', req.IDPMetadata)
-  next()
+  JSON.stringify(metadata).replace('{baseUrl}', baseUrl)
+);
+//console.log('req.IDPMetadata', req.IDPMetadata)
+next()
 })
 
 // View engine setup
