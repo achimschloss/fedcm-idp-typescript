@@ -75,6 +75,11 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
   const metadata = (SupportedIDPMetadata as IDPMetadataConfig)[hostname];
 
+  if (!metadata) {
+    console.log('No metadata found for hostname', hostname)
+    return res.status(404).send('Unknown hostname')
+  }
+
   // Add userManager to the req object
   req.userManager = userManager
 

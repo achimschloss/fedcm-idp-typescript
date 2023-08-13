@@ -1,6 +1,115 @@
 const { browserSupportsWebAuthn, startRegistration, startAuthentication } =
   SimpleWebAuthnBrowser
 
+function startPassKeyProcess (type, form, errorMessage) {
+  const formData = new FormData(form)
+  let path
+
+  if (type === 'registration') {
+    path = '/api/auth/generate-registration-options'
+  } else if (type === 'authentication') {
+    path = '/api/auth/generate-authentication-options'
+  } else {
+    handleError('Invalid type', errorMessage)
+    return
+  }
+
+  fetch(`${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(Object.fromEntries(formData))
+  })
+    .then(response => {
+      if (!response.ok) {
+        return response.text().then(text => Promise.reject(text))
+      } else {
+        return (
+          response
+            .json()
+            .then(options => {
+              if (type === 'registration') {
+                return startRegistration(options)
+              } else if (type === 'authentication') {
+                return startAuthentication(options)
+              }
+            })
+            // catch and log webauthn errors
+            .catch(err => console.log(err))
+        )
+      }
+    })
+    .then(webAuthnResponse => verifyPassKey(type, webAuthnResponse))
+    .then(() => {
+      handleSuccess()
+    })
+    .catch(err => handleError(err, errorMessage))
+}
+
+function verifyPassKey (type, attResp) {
+  let path
+  if (type === 'authentication') {
+    path = '/api/auth/verify-authentication'
+  } else if (type === 'registration') {
+    path = '/api/auth/verify-registration'
+  }
+
+  return fetch(`${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(attResp)
+  })
+    .then(response => response.json())
+    .then(verificationResp => {
+      if (verificationResp.verified) {
+        return Promise.resolve(verificationResp)
+      } else {
+        return Promise.reject(verificationResp.error)
+      }
+    })
+}
+
+function submitForm (form, path, errorMessage) {
+  const formData = new FormData(form)
+  fetch(`${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(Object.fromEntries(formData))
+  })
+    .then(response => {
+      if (!response.ok) {
+        return response.text().then(text => Promise.reject(text))
+      } else {
+        handleSuccess()
+      }
+    })
+    .catch(err => handleError(err, errorMessage))
+}
+
+function handleSuccess () {
+  // In case were in a FedCM iFrame  - close it
+  if (window.IdentityProvider && IdentityProvider.close) {
+    try {
+      IdentityProvider.close()
+    } catch (e) {}
+  }
+  location.reload()
+}
+
+function handleError (responseText, errorMessage) {
+  if (responseText || responseText !== '') {
+    errorMessage.textContent = responseText
+    errorMessage.classList.remove('hidden')
+  }
+  console.log('Error:', responseText)
+}
+
+function toggleCreateAccount () {
+  const createAccountContainer = document.getElementById(
+    'create-account-container'
+  )
+  createAccountContainer.classList.toggle('hidden')
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const signinForm = document.getElementById('signin-form')
   const signupForm = document.getElementById('signup-form')
@@ -18,9 +127,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const passwordField = signinForm.querySelector('input[name="secret"]')
     const password = passwordField.value.trim()
     if (password !== '') {
-      await submitForm(signinForm, '/api/auth/signin', signinErrorMessage)
+      submitForm(signinForm, '/api/auth/signin', signinErrorMessage)
     } else {
-      await startPassKeyAuthentication(signinForm, signinErrorMessage)
+      startPassKeyProcess('authentication', signinForm, signinErrorMessage)
     }
   })
 
@@ -28,153 +137,49 @@ document.addEventListener('DOMContentLoaded', () => {
     event.preventDefault()
     const submitType = event.submitter.getAttribute('submit-type')
     if (submitType === 'password') {
-      await submitForm(signupForm, '/api/auth/signup', signupErrorMessage)
+      submitForm(signupForm, '/api/auth/signup', signupErrorMessage)
     } else if (submitType === 'passkey') {
-      startPassKeyRegistration(signupForm, signupErrorMessage)
+      startPassKeyProcess('registration', signupForm, signupErrorMessage)
     } else {
       // Handle other form submissions
     }
   })
-})
 
-async function startPassKeyRegistration (form, errorMessage) {
-  const formData = new FormData(form)
-  const resp = await fetch('api/auth/generate-registration-options', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(Object.fromEntries(formData))
-  })
-  const attResp = resp.ok ? await startRegistration(await resp.json()) : null
-  if (!attResp) {
-    errorMessage.textContent = await resp.text()
-    errorMessage.classList.remove('hidden')
-    return
-  }
-  const verificationResp = await fetch('api/auth/verify-registration', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(attResp)
-  })
-  const verificationJSON = await verificationResp.json()
-  if (verificationJSON && verificationJSON.verified) {
-    if (window.IdentityProvider && IdentityProvider.close) {
-      try {
-        IdentityProvider.close()
-      } catch (e) {}
-    }
-    location.reload()
-  } else {
-    errorMessage.textContent = verificationJSON.error
-    errorMessage.classList.remove('hidden')
-  }
-}
+  authenticateOnLoad()
 
-async function startPassKeyAuthentication (form, errorMessage) {
-  const formData = new FormData(form)
-  const resp = await fetch('api/auth/generate-authentication-options', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(Object.fromEntries(formData))
-  })
-  const asseResp = await startAuthentication(await resp.json())
-  const verificationResp = await fetch('/api/auth/verify-authentication', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(asseResp)
-  })
-  const verificationJSON = await verificationResp.json()
-  if (verificationJSON && verificationJSON.verified) {
-    if (window.IdentityProvider && IdentityProvider.close) {
-      try {
-        IdentityProvider.close()
-      } catch (e) {}
-    }
-    location.reload()
-  } else {
-    errorMessage.textContent = verificationJSON.error
-    errorMessage.classList.remove('hidden')
-  }
-}
-
-async function submitForm (form, url, errorMessage) {
-  const formData = new FormData(form)
-
-  // Construct the base URL based on the current location
-  const baseURL = `${location.protocol}//${location.hostname}:${location.port}`
-
-  try {
-    const response = await fetch(`${baseURL}${url}`, {
+  function authenticateOnLoad () {
+    fetch('/api/auth/generate-authentication-options', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(Object.fromEntries(formData))
+      headers: { 'Content-Type': 'application/json' }
     })
-
-    if (response.ok) {
-      // In case this view is embedded in an FedCM Sign-Dialog, close it via the IdentityProvider API
-      if (window.IdentityProvider && IdentityProvider.close) {
-        try {
-          // Close the Sign-Dialog
-          IdentityProvider.close()
-        } catch (e) {
-          // Ignore the exception
-          console.info(
-            '`IdentityProvider.close()` was called but not in effect.'
+      .then(response => {
+        if (!response.ok) {
+          return response.text().then(text => Promise.reject(text))
+        } else {
+          return (
+            response
+              .json()
+              .then(options => startAuthentication(options, true))
+              // catch and log webauthn errors
+              .catch(err => console.log(err))
           )
         }
-      }
-      location.reload()
-    } else {
-      const errorText = await response.text()
-      errorMessage.textContent = errorText
-      errorMessage.classList.remove('hidden')
-    }
-  } catch (error) {
-    errorMessage.textContent = 'An error occurred. Please try again.'
-    errorMessage.classList.remove('hidden')
-  }
-}
-
-function toggleCreateAccount () {
-  const createAccountContainer = document.getElementById(
-    'create-account-container'
-  )
-  createAccountContainer.classList.toggle('hidden')
-}
-
-console.log('auth.js loaded')
-fetch('/api/auth/generate-authentication-options', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' }
-})
-  .then(resp => resp.json())
-  .then(opts => {
-    console.log('Authentication Options (Autofill)', opts)
-    startAuthentication(opts, true)
-      .then(async asseResp => {
-        const verificationResp = await fetch(
-          '/api/auth/verify-authentication',
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(asseResp)
-          }
-        )
-        const verificationJSON = await verificationResp.json()
-        console.log('Verification (Autofill)', verificationJSON)
-        if (verificationJSON && verificationJSON.verified) {
-          if (window.IdentityProvider && IdentityProvider.close) {
-            try {
-              IdentityProvider.close()
-            } catch (e) {}
-          }
-          location.reload()
+      })
+      .then(authResp => {
+        // its seems simplewebauthn resolves the promise in case of abort signal without an auth response
+        if (authResp) {
+          return verifyPassKey('authentication', authResp, signinErrorMessage)
         } else {
-          const errorMessage = document.getElementById('signin-error-message')
-          errorMessage.textContent = verificationJSON.error
-          errorMessage.classList.remove('hidden')
+          // Reject but don't show error message
+          console.log('Conditional UI aborted withouth authentication response')
+          return Promise.reject('')
         }
       })
-      .catch(err => console.error('(Autofill)', err))
-  })
+      .then(() => {
+        handleSuccess()
+      })
+      .catch(err => handleError(err, signinErrorMessage))
+  }
+})
+
+console.log('auth.js loaded')

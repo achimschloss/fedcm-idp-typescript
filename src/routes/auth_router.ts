@@ -307,6 +307,10 @@ authRouter.post('/verify-authentication', async (req, res) => {
 
   let user: User | undefined;
 
+  if (!body || !body.rawId) {
+    return res.status(400).send({ error: 'AuthenticationResponse missing' });
+  }
+
   // Get the user object from the user manager
 
   // If expected user is known, fetch the user from the user manager
