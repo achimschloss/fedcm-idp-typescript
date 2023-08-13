@@ -1,7 +1,7 @@
 const { browserSupportsWebAuthn, startRegistration, startAuthentication } =
   SimpleWebAuthnBrowser
 
-function startPassKeyProcess (type, form, errorMessage) {
+function startPassKeyProcess (type, form, errorDisplay) {
   const formData = new FormData(form)
   let path
 
@@ -10,7 +10,7 @@ function startPassKeyProcess (type, form, errorMessage) {
   } else if (type === 'authentication') {
     path = '/api/auth/generate-authentication-options'
   } else {
-    handleError('Invalid type', errorMessage)
+    handleError('Invalid type', errorDisplay)
     return
   }
 
@@ -23,26 +23,20 @@ function startPassKeyProcess (type, form, errorMessage) {
       if (!response.ok) {
         return response.text().then(text => Promise.reject(text))
       } else {
-        return (
-          response
-            .json()
-            .then(options => {
-              if (type === 'registration') {
-                return startRegistration(options)
-              } else if (type === 'authentication') {
-                return startAuthentication(options)
-              }
-            })
-            // catch and log webauthn errors
-            .catch(err => console.log(err))
-        )
+        return response.json().then(options => {
+          if (type === 'registration') {
+            return startRegistration(options)
+          } else if (type === 'authentication') {
+            return startAuthentication(options)
+          }
+        })
       }
     })
     .then(webAuthnResponse => verifyPassKey(type, webAuthnResponse))
     .then(() => {
       handleSuccess()
     })
-    .catch(err => handleError(err, errorMessage))
+    .catch(err => handleError(err, errorDisplay))
 }
 
 function verifyPassKey (type, attResp) {
@@ -95,12 +89,18 @@ function handleSuccess () {
   location.reload()
 }
 
-function handleError (responseText, errorMessage) {
-  if (responseText || responseText !== '') {
-    errorMessage.textContent = responseText
-    errorMessage.classList.remove('hidden')
+function handleError (error, errorDisplay) {
+  // Ignore these errors as they are expected
+  if (
+    error.name &&
+    (error.name === 'NotAllowedError' || error.name === 'AbortError')
+  ) {
+    console.log(error.message + ' ' + error.name)
+  } else {
+    errorDisplay.textContent = error
+    errorDisplay.classList.remove('hidden')
+    console.log('Error:', error)
   }
-  console.log('Error:', responseText)
 }
 
 function toggleCreateAccount () {
@@ -156,29 +156,20 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!response.ok) {
           return response.text().then(text => Promise.reject(text))
         } else {
-          return (
-            response
-              .json()
-              .then(options => startAuthentication(options, true))
-              // catch and log webauthn errors
-              .catch(err => console.log(err))
-          )
+          return response
+            .json()
+            .then(options => startAuthentication(options, true))
         }
       })
-      .then(authResp => {
-        // its seems simplewebauthn resolves the promise in case of abort signal without an auth response
-        if (authResp) {
-          return verifyPassKey('authentication', authResp, signinErrorMessage)
-        } else {
-          // Reject but don't show error message
-          console.log('Conditional UI aborted withouth authentication response')
-          return Promise.reject('')
-        }
-      })
+      .then(authResp =>
+        verifyPassKey('authentication', authResp, signinErrorMessage)
+      )
       .then(() => {
         handleSuccess()
       })
-      .catch(err => handleError(err, signinErrorMessage))
+      .catch(err => {
+        handleError(err, signinErrorMessage)
+      })
   }
 })
 
