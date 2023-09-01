@@ -1,6 +1,7 @@
 // Import statements
 import createError, { HttpError } from 'http-errors';
 import express, { Request, Response, NextFunction } from 'express';
+import cors from 'cors';
 import session from 'express-session';
 import path from 'path';
 import logger from 'morgan';
@@ -30,6 +31,9 @@ const SupportedIDPMetadata: IDPMetadataConfig = require('./config/idp_metadata.j
 // RP Metadata
 const clientMetaDataConfig = require('./config/client_metadata.json');
 
+// Define a constant for the supported hostnames
+const supportedIDPOrigins = Object.keys(SupportedIDPMetadata)
+
 declare global {
   namespace Express {
     interface Request {
@@ -41,7 +45,33 @@ declare global {
   }
 }
 
+// define the allowed origins for client requests
+const allowedOrigins: string[] = [];
+
+// add configured / known client origins
+for (const key in clientMetaDataConfig) {
+  if (clientMetaDataConfig.hasOwnProperty(key)) {
+    allowedOrigins.push(clientMetaDataConfig[key].origin);
+  }
+}
+
+// create a function that checks if the origin is allowed
+const corsOptions = {
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  preflightContinue: true
+};
+
+console.log('Allowed Origins:', allowedOrigins);
+
 // Set up middleware
+
 app.use(express.urlencoded({ extended: false }))
 
 app.use(
@@ -57,8 +87,16 @@ app.use(
   })
 )
 
-// Define a constant for the supported hostnames
-const supportedIDPOrigins = Object.keys(SupportedIDPMetadata)
+// Enable private network access to allow the RP to access the IDP via the private network
+app.use(function (req, res, next) {
+  if (req.headers["access-control-request-private-network"]) {
+    res.setHeader("access-control-allow-private-network", "true");
+  }
+  next();
+});
+
+// enable CORS for all routes
+app.use(cors(corsOptions));
 
 // Create a User Manager (Account managed per hostname)
 const userManager = new UserManager()
@@ -79,6 +117,8 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     console.log('No metadata found for hostname', hostname)
     return res.status(404).send('Unknown hostname')
   }
+
+  allowedOrigins.push(baseUrl);
 
   // Add userManager to the req object
   req.userManager = userManager
