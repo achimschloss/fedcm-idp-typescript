@@ -38,7 +38,7 @@ metaDataRouter.get('/fedcm.json', checkSecFetchDest, (req: Request, res: Respons
         "client_metadata_endpoint": "/fedcm/client_metadata_endpoint",
         "id_assertion_endpoint": "/fedcm/token_endpoint",
         "revocation_endpoint": "/fedcm/revocation_endpoint",
-        "signin_url": "/"
+        "login_url": "/"
     };
 
     // Merge endpoints with branding and return result
