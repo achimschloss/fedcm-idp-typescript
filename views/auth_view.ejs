@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authorize Access</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.16/dist/tailwind.min.css" rel="stylesheet">
+</head>
+
+<header class="title-bar bg-gray-500 text-white py-4 shadow-md w-full fixed top-0 left-0">
+    <div class="container mx-auto flex justify-between items-center">
+        <h1 class="site-title text-2xl font-semibold px-4">Sample IDP - <%= hostname %>
+        </h1>
+        <!-- Add any other elements you want in the title bar -->
+        <img src="<%= IDPMetadata.branding?.icons[0]?.url %>" alt="Icon" class="h-8 w-8 mr-4" />
+    </div>
+</header>
+
+<body class="bg-gray-100 min-h-screen flex flex-col items-center py-6 pt-20">
+    <div id="buttons" class="w-full max-w-md px-4 py-6 bg-white rounded-lg shadow-md">
+        <h1 class="text-xl font-semibold mb-4">Authorize Access</h1>
+        <div class="flex flex-col items-center mb-4">
+            <h2 class="text-xl mb-2">
+                <%= client.name %>
+            </h2>
+            <div><span class="font-semibold">
+                    <%= scope %>
+                </span></div>
+        </div>
+
+        <form id="authorize-form">
+            <input type="hidden" name="client_id" value="<%= client_id %>">
+            <input type="hidden" name="scope" value="<%= scope %>">
+            <input type="hidden" name="nonce" value="<%= nonce %>">
+            <button type="submit"
+                class="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 rounded-md">Authorize</button>
+        </form>
+
+        <form id="reject-form">
+            <button type="submit"
+                class="w-full bg-red-500 hover:bg-red-600 text-white font-medium py-2 rounded-md">Reject</button>
+        </form>
+    </div>
+
+    <script src="/js/authz.js"></script>
+</body>
+
+</html>
