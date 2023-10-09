@@ -441,9 +441,9 @@ authRouter.post('/signup', async (req: Request, res: Response) => {
   const emailHash = bcrypt.hashSync(email, 10)
 
   // Generate a random avatar URL
-  const avatarUrl = `https://avatars.dicebear.com/api/bottts/${encodeURIComponent(
+  const avatarUrl = `https://api.dicebear.com/7.x/bottts/png?seed=${encodeURIComponent(
     emailHash
-  )}.png`
+  )}`
 
   // Save the new user
   const newUser: User = {
