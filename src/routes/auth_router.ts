@@ -10,6 +10,11 @@ export const authRouter = Router();
 // Set the expiration time for the login session to 5 minutes
 const EXPIRATION_OFFSET = 5 * 60 * 1000; // 5 minutes
 
+// IDP Sign-In Status header
+const IDP_LOGINSTATUS_HEADER = 'Set-Login';
+const IDP_LOGINSTATUS_LOGGEDIN = 'logged-in';
+const IDP_LOGINSTATUS_LOGGEDOUT = 'logged-out';
+
 import {
   // Registration
   generateRegistrationOptions,
@@ -216,7 +221,7 @@ authRouter.post('/verify-registration', async (req, res) => {
     req.session.loginSessionExpiration = expiration;
 
     // Set FedCM Sign-In status via header
-    res.set('IdP-SignIn-Status', 'action=signin');
+    res.set(IDP_LOGINSTATUS_HEADER, IDP_LOGINSTATUS_LOGGEDIN);
   }
 
   // Cleanup registration states
@@ -402,7 +407,7 @@ authRouter.post('/verify-authentication', async (req, res) => {
   req.session.loginSessionExpiration = expiration;
 
   // Set FedCM Sign-In status via header
-  res.set('IdP-SignIn-Status', 'action=signin');
+  res.set(IDP_LOGINSTATUS_HEADER, IDP_LOGINSTATUS_LOGGEDIN);
 
   // Cleanup authentication states
   req.session.passkeyLogin = undefined;
@@ -466,7 +471,7 @@ authRouter.post('/signup', async (req: Request, res: Response) => {
   req.session.loginSessionExpiration = expiration;
 
   // Set FedCM Sign-In status via header
-  res.set('IdP-SignIn-Status', 'action=signin');
+  res.set(IDP_LOGINSTATUS_HEADER, IDP_LOGINSTATUS_LOGGEDIN);
 
   //console.log('signup - req.session.user:', req.session.user)
   // Redirect to the root URL after successful account creation and sign-in
@@ -500,7 +505,7 @@ authRouter.post('/signin', async (req: Request, res: Response) => {
   req.session.loginSessionExpiration = expiration;
 
   // Set FedCM Sign-In status via header
-  res.set('IdP-SignIn-Status', 'action=signin');
+  res.set(IDP_LOGINSTATUS_HEADER, IDP_LOGINSTATUS_LOGGEDIN);
 
   //console.log('signin - req.session.user:', req.session.user)
   // Redirect to the root URL after successful sign-in
@@ -588,7 +593,7 @@ authRouter.post('/delete-user', async (req: Request, res: Response) => {
 authRouter.post('/signout', (req: Request, res: Response) => {
 
   // Set FedCM Sign-In status via header
-  res.set('IdP-SignIn-Status', 'action=signout-all');
+  res.set(IDP_LOGINSTATUS_HEADER, IDP_LOGINSTATUS_LOGGEDOUT);
 
   if (req.session) {
     req.session.destroy(err => {
