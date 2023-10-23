@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { Router, Request, Response } from 'express';
 import { checkSecFetchDest } from '../services/util';
+import crypto from 'crypto';
 
 export const fedcmRouter = Router();
 
@@ -123,44 +124,149 @@ fedcmRouter.post('/token_endpoint', checkSecFetchDest, async (req: Request, res:
     iat: new Date().getTime(),
   };
 
-  // Support default and AuthZ use-case (scope is optional)
-  // If scope is present we add the corresponding properties to the JWT payload
+  // If scope is present we return a continue_on response to the client to render the interaction view
   if (scope) {
-    // Add properties based on the scope
-    if (scope.includes('email')) {
-      jwtPayload.email = email;
-    }
-    if (scope.includes('name')) {
-      jwtPayload.name = name;
-    }
-    if (scope.includes('picture')) {
-      jwtPayload.picture = avatarUrl;
-    }
+    res.json({ "continue_on": `/fedcm/authorize?client_id=${client_id}&scope=${scope}&nonce=${nonce}` });
   }
-  // If scope is not present we add all properties to the JWT payload
-  // This means that the client is requesting all properties in the current FedCM design
+
+  // If scope is not present we directly return the JWT token
+  // This means that the client is requesting all standard properties in the current FedCM design
   else {
     // Add all properties
     jwtPayload.email = email;
     jwtPayload.name = name;
     jwtPayload.picture = avatarUrl;
+    const token = jwt.sign(jwtPayload, SECRET_KEY);
+    res.json({ token: token })
   }
-
-
-  const token = jwt.sign(jwtPayload, SECRET_KEY);
-
-  res.json({ token: token })
   //console.log(jwt.decode(token))
 })
 
 /**
+ * Endpoint to handle requests for user interaction (continue_on replys from token_endpoint)
+ * Will render the interaction view (pop-up) for the user to approve/reject the request
+ * @route GET /authorize
+ * @see https://github.com/fedidcg/FedCM/issues/477
+*/
+fedcmRouter.get('/authorize', (req: Request, res: Response) => {
+  const scope = req.query.scope as string;
+  const nonce = req.query.nonce as string;
+  const client_id = req.query.client_id as string;
+
+  // For later use - display account for approval
+  const {
+    email,
+    name,
+    avatarUrl,
+    accountId: account_id_session
+  } = req.session.loggedInUser
+
+  // TODO error handling (no session, no client_id, no scope, no nonce)
+  // TODO check nonce, session etc.
+
+  // Render the interaction view for user to approve/reject the request
+  res.render('interaction_view.ejs',
+    {
+      scope: scope,
+      hostname: req.hostname,
+      user: req.session.loggedInUser,
+      IDPMetadata: req.IDPMetadata,
+      nonce: nonce,
+      client: req.clientMetaData[client_id],
+      client_id: client_id
+    });
+});
+
+/**
+ * Endpoint called when user approves the request for user interaction (continue_on replys from token_endpoint)
+ * Returns a JSON object to the interaction_view on the client side with ID/Access Token as per approved scope
+ * @route GET /authorize_endpoint
+ * @see https://github.com/fedidcg/FedCM/issues/477
+*/
+fedcmRouter.post('/authorize_endpoint', (req: Request, res: Response) => {
+  const {
+    client_id,
+    scope,
+    nonce
+  } = req.body
+
+  const {
+    email,
+    name,
+    avatarUrl,
+    accountId: account_id_session
+  } = req.session.loggedInUser
+
+  const nonStandardScopes = scope.replace(/openid|email|name|profile|picture/g, '').trim()
+
+  if (!scope || !nonce || !client_id) {
+    return res.status(400).send('Missing required query parameters');
+  }
+
+  // Generate a JWT token confirming to the authorization
+  let tokenPayload: {
+    access_token?: string,
+    token_type: string,
+    expires_in: number,
+    id_token?: string,
+  } = {
+    token_type: 'Bearer',
+    expires_in: new Date().getTime() + 1000 * 60 * 60 * 24,
+  };
+
+  if (nonStandardScopes) {
+    let access_token = {
+      iss: req.hostname,
+      iat: new Date().getTime(),
+      exp: new Date().getTime() + 1000 * 60 * 60 * 24,
+      // anything but openid, profile, email, name, picture
+      scope: nonStandardScopes,
+      jti: crypto.randomBytes(16).toString('hex'),
+      client_id: client_id,
+      nonce: nonce,
+    }
+    tokenPayload.access_token = jwt.sign(access_token, SECRET_KEY);
+  }
+  if (scope.includes('openid')) {
+    let idtoken: {
+      sub: string,
+      nonce: string,
+      exp: number,
+      iat: number,
+      email?: string,
+      name?: string,
+      picture?: string
+    } = {
+      sub: account_id_session,
+      nonce: nonce,
+      exp: new Date().getTime() + 1000 * 60 * 60 * 24,
+      iat: new Date().getTime(),
+    };
+
+    if (scope.includes('email')) {
+      idtoken.email = email;
+    }
+    if (scope.includes('name')) {
+      idtoken.name = name;
+    }
+    if (scope.includes('picture')) {
+      idtoken.picture = avatarUrl;
+    }
+    tokenPayload.id_token = jwt.sign(idtoken, SECRET_KEY);
+  }
+
+  const token = jwt.sign(tokenPayload, SECRET_KEY);
+  res.send(token)
+});
+
+/**
  * Embedded view route for personalized button. 
- * Servers an embedded view for the personalized button to be used by the RP
+ * Serves an embedded view for the personalized button to be used by the RP
  * Server side code is mainly used to validate the origin of the request (top level origin))
  * @see https://github.com/fedidcg/FedCM/issues/382
  * @route GET /embedded
  */
-fedcmRouter.get('/embedded', (req, res) => {
+fedcmRouter.get('/embedded', (req: Request, res: Response) => {
 
   const hostname = req.hostname
 
