@@ -144,8 +144,7 @@ fedcmRouter.post('/token_endpoint', checkSecFetchDest, async (req: Request, res:
 
 /**
  * Endpoint to handle requests for user interaction (continue_on replys from token_endpoint)
- * Serves an pop-up view for the user to approve/reject the request
- * Will render the interaction view for the user to approve/reject the request
+ * Will render the interaction view (pop-up) for the user to approve/reject the request
  * @route GET /authorize
  * @see https://github.com/fedidcg/FedCM/issues/477
 */
@@ -180,7 +179,7 @@ fedcmRouter.get('/authorize', (req: Request, res: Response) => {
 
 /**
  * Endpoint called when user approves the request for user interaction (continue_on replys from token_endpoint)
- * Returns a JWT token to the client, which then calls IdentityProvider.resolve(token)
+ * Returns a JSON object to the interaction_view on the client side with ID/Access Token as per approved scope
  * @route GET /authorize_endpoint
  * @see https://github.com/fedidcg/FedCM/issues/477
 */
