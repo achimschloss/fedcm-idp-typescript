@@ -22,8 +22,9 @@ function submit (form, path) {
 
 function handleSuccess (token) {
   console.log(token)
-  const response = '--fake-token-from-pop-up-window--'
-  IdentityProvider.resolve(response)
+  // Resolve with token
+  // this will fail on the RP side of the API due to https://bugs.chromium.org/p/chromium/issues/detail?id=1489239
+  IdentityProvider.resolve(token)
 }
 
 function handleError (err) {
