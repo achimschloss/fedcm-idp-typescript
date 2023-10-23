@@ -1,8 +1,7 @@
 import jwt from 'jsonwebtoken';
-import { Router, Request, Response, NextFunction } from 'express';
+import { Router, Request, Response } from 'express';
 import { checkSecFetchDest } from '../services/util';
 import crypto from 'crypto';
-import { token } from 'morgan';
 
 export const fedcmRouter = Router();
 
@@ -63,7 +62,7 @@ fedcmRouter.get('/accounts_endpoint', checkSecFetchDest, (req: Request, res: Res
  * @see https://fedidcg.github.io/FedCM/#idp-api-id-assertion-endpoint
  * @route POST /token_endpoint
  */
-fedcmRouter.post('/token_endpoint', checkSecFetchDest, async (req: Request, res: Response, next: NextFunction) => {
+fedcmRouter.post('/token_endpoint', checkSecFetchDest, async (req: Request, res: Response) => {
   if (!req.session.loggedInUser) {
     return res.json({}) // Return an empty result if no user is logged in
   }
@@ -125,11 +124,11 @@ fedcmRouter.post('/token_endpoint', checkSecFetchDest, async (req: Request, res:
     iat: new Date().getTime(),
   };
 
-  // Support OPENID and generic AuthZ use-cases (scope is optional)
-  // If scope is present we add the corresponding properties to the JWT payload
+  // If scope is present we return a continue_on response to the client to render the interaction view
   if (scope) {
     res.json({ "continue_on": `/fedcm/authorize?client_id=${client_id}&scope=${scope}&nonce=${nonce}` });
   }
+
   // If scope is not present we directly return the JWT token
   // This means that the client is requesting all standard properties in the current FedCM design
   else {
@@ -143,8 +142,14 @@ fedcmRouter.post('/token_endpoint', checkSecFetchDest, async (req: Request, res:
   //console.log(jwt.decode(token))
 })
 
-// Define the route to serve the /fedcm/authorize endpoint
-fedcmRouter.get('/authorize', (req, res) => {
+/**
+ * Endpoint to handle requests for user interaction (continue_on replys from token_endpoint)
+ * Serves an pop-up view for the user to approve/reject the request
+ * Will rendure the interaction view for the user to approve/reject the request
+ * @route GET /authorize
+ * @see https://github.com/fedidcg/FedCM/issues/477
+*/
+fedcmRouter.get('/authorize', (req: Request, res: Response) => {
   const scope = req.query.scope as string;
   const nonce = req.query.nonce as string;
   const client_id = req.query.client_id as string;
@@ -157,7 +162,11 @@ fedcmRouter.get('/authorize', (req, res) => {
     accountId: account_id_session
   } = req.session.loggedInUser
 
-  res.render('auth_view.ejs',
+  // TODO error handling (no session, no client_id, no scope, no nonce)
+  // TODO check nonce, session etc.
+
+  // Render the interaction view for user to approve/reject the request
+  res.render('interaction_view.ejs',
     {
       scope: scope,
       hostname: req.hostname,
@@ -169,8 +178,13 @@ fedcmRouter.get('/authorize', (req, res) => {
     });
 });
 
-// Endpoint to handle successful authorization
-fedcmRouter.post('/authorize_endpoint', (req, res) => {
+/**
+ * Endpoint called when user approves the request for user interaction (continue_on replys from token_endpoint)
+ * Returns a JWT token to the client, which then calls IdentityProvider.resolve(token)
+ * @route GET /authorize_endpoint
+ * @see https://github.com/fedidcg/FedCM/issues/477
+*/
+fedcmRouter.post('/authorize_endpoint', (req: Request, res: Response) => {
   const {
     client_id,
     scope,
@@ -248,12 +262,12 @@ fedcmRouter.post('/authorize_endpoint', (req, res) => {
 
 /**
  * Embedded view route for personalized button. 
- * Servers an embedded view for the personalized button to be used by the RP
+ * Serves an embedded view for the personalized button to be used by the RP
  * Server side code is mainly used to validate the origin of the request (top level origin))
  * @see https://github.com/fedidcg/FedCM/issues/382
  * @route GET /embedded
  */
-fedcmRouter.get('/embedded', (req, res) => {
+fedcmRouter.get('/embedded', (req: Request, res: Response) => {
 
   const hostname = req.hostname
 

@@ -43,7 +43,7 @@ const handleFormSubmission = event => {
   } else if (event.target === rejectForm) {
     // Directly resolve with error message
     console.log(`Client ${clientId} rejected for scope ${scope}`)
-    IdentityProvider.resolve(JSON.stringify({ error: 'permission_denied' }))
+    IdentityProvider.close()
   }
 }
 
