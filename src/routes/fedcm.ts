@@ -145,7 +145,7 @@ fedcmRouter.post('/token_endpoint', checkSecFetchDest, async (req: Request, res:
 /**
  * Endpoint to handle requests for user interaction (continue_on replys from token_endpoint)
  * Serves an pop-up view for the user to approve/reject the request
- * Will rendure the interaction view for the user to approve/reject the request
+ * Will render the interaction view for the user to approve/reject the request
  * @route GET /authorize
  * @see https://github.com/fedidcg/FedCM/issues/477
 */
