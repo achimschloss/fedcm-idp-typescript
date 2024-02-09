@@ -35,10 +35,9 @@ fedcmRouter.get('/client_metadata_endpoint', checkSecFetchDest, (req: Request, r
  */
 fedcmRouter.get('/accounts_endpoint', checkSecFetchDest, (req: Request, res: Response) => {
 
+  // respond with 401 if no user is logged in
   if (!req.session.loggedInUser) {
-    return res.json({
-      accounts: []
-    }) // Return an empty result if no user is logged in
+    return res.sendStatus(401);
   }
 
   const currentUser = req.session.loggedInUser
