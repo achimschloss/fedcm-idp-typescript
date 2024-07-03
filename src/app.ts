@@ -1,6 +1,7 @@
 // Import statements
 import createError, { HttpError } from 'http-errors';
 import express, { Request, Response, NextFunction } from 'express';
+import { secretKey, decryptData } from './services/encryption';
 import session from 'express-session';
 import path from 'path';
 import logger from 'morgan';
@@ -41,21 +42,48 @@ declare global {
   }
 }
 
+// Middleware to inject user details in userSession into the main express session 
+// Seperate handling needed given ID Assertion Endpoint requirement for sameSite: none
+const userDataMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  const encryptedUserData = req.cookies.userSession;
+
+  if (encryptedUserData) {
+      try {
+          const userData = decryptData(encryptedUserData);
+          req.session.loggedInUser = userData;
+      } catch (error) {
+          console.error('Error decrypting user data:', error);
+          req.session.loggedInUser = null;
+      }
+  } else {
+      req.session.loggedInUser = null;
+  }
+
+  next();
+};
+
 // Set up middleware
 app.use(express.urlencoded({ extended: false }))
+
+// Middleware to parse cookies
+app.use(require('cookie-parser')());
 
 app.use(
   session({
     name: 'fedcm-idp-session:',
-    secret: 'mysecret', // replace with your own secret
+    secret: secretKey, // replace with your own secret
     resave: false,
     saveUninitialized: false,
     cookie: {
+      httpOnly: true,
       // Set to secure in case we are neither running on localhost nor on Heroku
       secure: process.env.LOCALHOST ? false : (process.env.HEROKU_APP_NAME ? false : true)
     }
   })
 )
+
+// Use the middleware for all routes
+app.use(userDataMiddleware);
 
 // Define a constant for the supported hostnames
 const supportedIDPOrigins = Object.keys(SupportedIDPMetadata)
@@ -95,6 +123,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     console.log('Login session expired - IdP-SignIn-Status NOT set to action=signout-all')
     req.session.loginSessionExpiration = undefined
     req.session.loggedInUser = undefined
+    res.clearCookie('userSession');
   }
 
   // Add IDPMetadata to the req object for routers to use

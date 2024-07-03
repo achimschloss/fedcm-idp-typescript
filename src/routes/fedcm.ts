@@ -1,12 +1,13 @@
 import jwt from 'jsonwebtoken';
 import { Router, Request, Response } from 'express';
 import { checkSecFetchDest } from '../services/util';
+import { secretKey, encryptData } from '../services/encryption';
 import crypto from 'crypto';
 
 export const fedcmRouter = Router();
 
+// Used for token signing demonstration
 const SECRET_KEY = 'xxxxxxx'
-
 
 /**
  * Client metadata endpoint.
@@ -93,6 +94,11 @@ fedcmRouter.post('/token_endpoint', checkSecFetchDest, async (req: Request, res:
     return res.status(400).json({ error: 'Invalid account_id' })
   }
 
+  // Set CORS header after checks
+  
+  res.set('Access-Control-Allow-Origin', req.get('Origin')); // Replace * with the specific origin you want to allow
+  res.set('Access-Control-Allow-Credentials', 'true')
+
   if (disclosure_text_shown) {
     const userManager = req.userManager
 
@@ -101,8 +107,21 @@ fedcmRouter.post('/token_endpoint', checkSecFetchDest, async (req: Request, res:
 
     // Add the client from the list of approved clients and update the session
     if (currentUser) {
+
       await userManager.addApprovedClient(currentUser, client_id)
-      req.session.loggedInUser.approved_clients = [...currentUser.approved_clients]
+
+      // Get updated user 
+      let updatedUser = await userManager.getUserByAccountID(account_id_session)
+      
+      // Encrypt updated user data before storing in cookie
+      const encryptedUser = encryptData(updatedUser);
+
+      // Set cookie with encrypted user data
+      res.cookie('userSession', encryptedUser, {
+          httpOnly: true,   // Prevent client-side access
+          secure: true,     // Use HTTPS
+          sameSite: 'none' // Protect against CSRF
+      });
     }
   }
 

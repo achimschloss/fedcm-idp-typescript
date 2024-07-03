@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Router, Request, Response } from 'express';
 import { User } from '../services/user';
 import { SerializedAuthenticatorDevice } from '../services/userManager';
+import {  encryptData } from '../services/encryption';
 const base64url = require('base64url');
 
 export const authRouter = Router();
@@ -86,9 +87,9 @@ authRouter.post('/generate-registration-options', async (req, res) => {
   const emailHash = bcrypt.hashSync(email, 10)
 
   // Generate a random avatar URL
-  const avatarUrl = `https://avatars.dicebear.com/api/bottts/${encodeURIComponent(
+  const avatarUrl = `https://api.dicebear.com/7.x/bottts/png?seed=${encodeURIComponent(
     emailHash
-  )}.png`
+  )}`
 
   // Save the new user
   const newUser: User = {
@@ -213,8 +214,15 @@ authRouter.post('/verify-registration', async (req, res) => {
     // Add the authenticator device to the user's list of authenticators
     req.userManager.addAuthenticatorDevice(newUser, newDevice)
 
-    // Store user information in the session
-    req.session.loggedInUser = newUser
+    // Encrypt user data before storing in cookie
+    const encryptedUser = encryptData(newUser);
+  
+    // Set cookie with encrypted user data
+    res.cookie('userSession', encryptedUser, {
+      httpOnly: true,   
+      secure: true,     
+      sameSite: 'none' 
+    });
 
     // Set the expiration time for the login session
     const expiration = Date.now() + EXPIRATION_OFFSET;
@@ -399,8 +407,15 @@ authRouter.post('/verify-authentication', async (req, res) => {
     req.userManager.updateAuthDevice(matchingDevice)
   }
 
-  // Store user information in the session
-  req.session.loggedInUser = user
+  // Encrypt user data before storing in cookie
+  const encryptedUser = encryptData(user);
+
+  // Set cookie with encrypted user data
+  res.cookie('userSession', encryptedUser, {
+          httpOnly: true,   // Prevent client-side access
+          secure: true,     // Use HTTPS
+          sameSite: 'none' // Protect against CSRF
+  });
 
   // Set the expiration time for the login session
   const expiration = Date.now() + EXPIRATION_OFFSET;
@@ -463,8 +478,15 @@ authRouter.post('/signup', async (req: Request, res: Response) => {
   }
   req.userManager.addUser(newUser)
 
-  // Store user information in the session
-  req.session.loggedInUser = newUser
+  // Encrypt user data before storing in cookie
+  const encryptedUser = encryptData(newUser);
+
+  // Set cookie with encrypted user data
+  res.cookie('userSession', encryptedUser, {
+          httpOnly: true,   // Prevent client-side access
+          secure: true,     // Use HTTPS
+          sameSite: 'none' // Protect against CSRF
+  });
 
   // Set the expiration time for the login session
   const expiration = Date.now() + EXPIRATION_OFFSET;
@@ -497,8 +519,15 @@ authRouter.post('/signin', async (req: Request, res: Response) => {
     return res.status(401).send({ error: 'Invalid email or password' })
   }
 
-  // Store user information and secret in the session
-  req.session.loggedInUser = user
+  // Encrypt user data before storing in cookie
+  const encryptedUser = encryptData(user);
+
+  // Set cookie with encrypted user data
+  res.cookie('userSession', encryptedUser, {
+          httpOnly: true,   // Prevent client-side access
+          secure: true,     // Use HTTPS
+          sameSite: 'none' // Protect against CSRF
+  });
 
   // Set the expiration time for the login session
   const expiration = Date.now() + EXPIRATION_OFFSET;
@@ -534,7 +563,19 @@ authRouter.post('/remove_client', async (req: Request, res: Response) => {
   // Remove the client from the list of approved clients and update the session
   if (currentUser) {
     await userManager.removeApprovedClient(currentUser, client_id)
-    req.session.loggedInUser.approved_clients = [...currentUser.approved_clients]
+
+    // Get updated user 
+    let updatedUser = await userManager.getUserByAccountID(accountId)
+      
+    // Encrypt updated user data before storing in cookie
+    const encryptedUser = encryptData(updatedUser);
+
+    // Set cookie with encrypted user data
+    res.cookie('userSession', encryptedUser, {
+           httpOnly: true,   // Prevent client-side access
+           secure: true,     // Use HTTPS
+           sameSite: 'none' // Protect against CSRF
+    });
   }
   res.redirect('/')
 })
@@ -577,6 +618,9 @@ authRouter.post('/delete-user', async (req: Request, res: Response) => {
     await userManager.deleteAuthenticatorDevice(rawDevice.credentialID);
   }
 
+  //cleanup userSession for FedCM
+  res.clearCookie('userSession');
+
   req.session.destroy(err => {
     if (err) {
       return res.status(500).send({ error: 'Error deleting user' })
@@ -594,6 +638,9 @@ authRouter.post('/signout', (req: Request, res: Response) => {
 
   // Set FedCM Sign-In status via header
   res.set(IDP_LOGINSTATUS_HEADER, IDP_LOGINSTATUS_LOGGEDOUT);
+
+  //cleanup userSession for FedCM
+  res.clearCookie('userSession');
 
   if (req.session) {
     req.session.destroy(err => {
